@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:13.2
+    ports:
+      - 58122:5432
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=user
+  quokka_editor_back:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - INSTALL_DEV=true
+    volumes:
+      - ./src/quokka_editor_back:/app/src/quokka_editor_back
+    ports:
+      - 8000:8080
+    depends_on:
+      - db
