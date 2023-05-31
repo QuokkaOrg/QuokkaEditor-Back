@@ -1,23 +1,28 @@
-import os
-from pydantic import BaseSettings
+from pathlib import Path
+from pydantic import BaseSettings, PostgresDsn
 
 
 class Settings(BaseSettings):
-    pass
+    debug: bool = False
+    database_dsn: PostgresDsn
+    rich_logging: bool = False
+    root_log_level: str = "ERROR"
+    log_level: str = "DEBUG"
 
 
 settings = Settings()
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "root": {"handlers": ["console"], "level": os.getenv("ROOT_LOG_LEVEL", "DEBUG")},
-    "loggers": {
+BASE_PATH = Path(__file__).parent.resolve()
+
+TORTOISE_ORM = {
+    "connections": {"default": settings.database_dsn},
+    "apps": {
         "quokka_editor_back": {
-            "handlers": ["console"],
-            "level": os.getenv("LOG_LEVEL", "ERROR"),
-            "propagate": False,
-        }
+            "models": [
+                "quokka_editor_back.models.document",
+                "aerich.models",
+            ],
+            "default_connection": "default",
+        },
     },
 }
