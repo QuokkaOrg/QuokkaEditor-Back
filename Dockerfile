@@ -22,5 +22,3 @@ COPY src/quokka_editor_back ./src/quokka_editor_back
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install ; else poetry install --no-dev ; fi"
 
 EXPOSE 8080
-
-CMD gunicorn --config src/quokka_editor_back/gunicorn.conf.py quokka_editor_back.api.app:app
