@@ -47,6 +47,9 @@ async def update_document(document_id: UUID, document_payload: DocumentPayload):
         raise http_exception()
     document.title = document_payload.title
     document.content = document_payload.content.encode()
+
+    await document.save()
+
     return DocumentResponse.parse_obj(document)
 
 
