@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     rich_logging: bool = False
     root_log_level: str = "ERROR"
     log_level: str = "DEBUG"
+    secret_key: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
 
 
 settings = Settings()
@@ -20,6 +23,7 @@ TORTOISE_ORM = {
         "quokka_editor_back": {
             "models": [
                 "quokka_editor_back.models.document",
+                "quokka_editor_back.models.user",
                 "aerich.models",
             ],
             "default_connection": "default",

@@ -1,66 +1,99 @@
-from pydantic import BaseModel, Field
-
-from fastapi import APIRouter, HTTPException
-from starlette import status
-from quokka_editor_back.models.document import Document
-from tortoise.exceptions import DoesNotExist
+from typing import Annotated
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from starlette import status
+from tortoise.contrib.fastapi import HTTPNotFoundError
+from tortoise.exceptions import DoesNotExist
+
+from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.user import User
+from quokka_editor_back.routers.auth import get_current_user
 
 router = APIRouter(tags=["documents"])
 
 
-class DocumentPayload(BaseModel):
-    title: str = Field("", max_length=250)
-    content: str = Field("")
+class DocumentSchema(BaseModel):
+    title: str = Field(max_length=250)
+    content: str | None
 
 
-class DocumentResponse(DocumentPayload):
+class DocumentResponse(DocumentSchema):
     id: UUID
 
 
-@router.get("/")
-async def read_all():
-    return await Document.all()
-
-
-@router.get("/{document_id}")
-async def read_document(document_id: UUID):
+async def get_document(document_id: UUID, user: User) -> Document:
     try:
-        return await Document.get(id=document_id)
+        return await Document.get(id=document_id, user=user)
     except DoesNotExist:
-        raise http_exception()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {document_id} not found",
+        )
+
+
+@router.get("/", response_model=list[DocumentResponse])
+async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
+    return await Document.filter(user=current_user)
 
 
 @router.post("/", response_model=DocumentResponse)
-async def create_document(document_payload: DocumentPayload):
+async def create_document(
+    document_payload: DocumentSchema,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
     new_document = await Document.create(
-        title=document_payload.title, content=document_payload.content.encode()
+        title=document_payload.title,
+        content=document_payload.content.encode() if document_payload.content else None,
+        user=current_user,
     )
-    return DocumentResponse.parse_obj(new_document)
+    return new_document
 
 
-@router.patch("/{document_id}")
-async def update_document(document_id: UUID, document_payload: DocumentPayload):
-    try:
-        document = await Document.get(id=document_id)
-    except DoesNotExist:
-        raise http_exception()
-    document.title = document_payload.title
-    document.content = document_payload.content.encode()
-
-    await document.save()
-
-    return DocumentResponse.parse_obj(document)
+@router.get(
+    "/{document_id}",
+    response_model=DocumentResponse,
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
+)
+async def read_document(
+    document_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    return await get_document(document_id=document_id, user=current_user)
 
 
-@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(document_id: UUID):
-    try:
-        document = await Document.get(id=document_id)
-    except DoesNotExist:
-        raise http_exception()
+@router.patch(
+    "/{document_id}",
+    response_model=DocumentResponse,
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
+)
+async def update_document(
+    document_id: UUID,
+    document_payload: DocumentSchema,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    document = await get_document(document_id=document_id, user=current_user)
+    document.update_from_dict(
+        {
+            "title": document_payload.title,
+            "content": document_payload.content.encode()
+            if document_payload.content
+            else None,
+        }
+    )
+
+    return document
+
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
+)
+async def delete_document(
+    document_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    document = await get_document(document_id=document_id, user=current_user)
     await document.delete()
-
-
-def http_exception():
-    return HTTPException(status_code=404, detail="Document not found")
