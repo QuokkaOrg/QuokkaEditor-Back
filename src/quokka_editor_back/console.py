@@ -1,7 +1,5 @@
-import asyncio
 import click
 import uvicorn
-from quokka_editor_back.settings import TORTOISE_ORM, BASE_PATH
 
 
 @click.group()
