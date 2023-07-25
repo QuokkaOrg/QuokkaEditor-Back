@@ -65,7 +65,7 @@ async def get_current_user(
     "/register",
     status_code=status.HTTP_201_CREATED,
 )
-async def register(payload: Annotated[UserCreate, Depends()]):
+async def register(payload: UserCreate):
     user = await User.get_or_none(username=payload.username)
     if user is not None:
         raise HTTPException(
@@ -81,7 +81,7 @@ async def register(payload: Annotated[UserCreate, Depends()]):
 
 
 @router.post("/login")
-async def login(payload: Annotated[UserLogin, Depends()]):
+async def login(payload: UserLogin):
     user = await User.get_or_none(username=payload.username)
     if user is None:
         return HTTPException(status_code=401, detail="Invalid username")
