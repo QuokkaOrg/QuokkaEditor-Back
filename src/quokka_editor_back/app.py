@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from tortoise import Tortoise, connections
 
+from quokka_editor_back.routers import users
 from quokka_editor_back.settings import TORTOISE_ORM
 from src.quokka_editor_back.routers import documents, websockets, auth
 
@@ -33,3 +34,4 @@ app.add_middleware(
 app.include_router(router=websockets.router, prefix="/ws")
 app.include_router(router=documents.router, prefix="/documents")
 app.include_router(router=auth.router, prefix="/auth")
+app.include_router(router=users.router, prefix="/users")
