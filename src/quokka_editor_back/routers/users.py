@@ -43,18 +43,15 @@ async def get_user(
 
 
 @router.patch(
-    "/{user_id}",
+    "/me",
     response_model=UserSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
 )
-async def update_document(
-    user_id: UUID,
+async def update_user(
     user_payload: UserSchema,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    if current_user != user_id:
-        return HTTPException(status_code=404, detail=HTTPNotFoundError)
-    user = await get_user(user_id=user_id)
+    user = await get_user(user_id=current_user)
     user.update_from_dict(
         {
             "username": user_payload.username,
