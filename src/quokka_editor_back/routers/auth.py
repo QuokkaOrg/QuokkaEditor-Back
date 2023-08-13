@@ -1,6 +1,4 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, SecretStr
 from starlette import status
@@ -13,14 +11,6 @@ from quokka_editor_back.models.user import User
 class Token(BaseModel):
     access_token: str
     token_type: str
-
-
-class UserSchema(BaseModel):
-    username: str
-    email: str | None = None
-    first_name: str | None = None
-    last_name: str | None = None
-    is_active: bool | None = None
 
 
 class UserCreate(BaseModel):
