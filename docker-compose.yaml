@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -6,9 +6,8 @@ services:
     ports:
       - 58101:5432
     environment:
-      - POSTGRES_USER=quokka_editor_user
+      - POSTGRES_USER=quokka_editor_back
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=quokka_editor_db
 
   api:
     build:
@@ -19,7 +18,7 @@ services:
     command: python -m quokka_editor_back run --debug
     environment:
       - DEBUG=true
-      - DATABASE_DSN=postgres://quokka_editor_user:password@db:5432/quokka_editor_db
+      - DATABASE_DSN=postgres://quokka_editor_back:password@db:5432/quokka_editor_back
     volumes:
       - ./src/quokka_editor_back:/app/src/quokka_editor_back
     ports:

@@ -36,7 +36,7 @@ async def get_user(user_id: UUID) -> User:
     response_model=UserSchema,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
 )
-async def get_user(
+async def get_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     return await get_user(user_id=current_user)
