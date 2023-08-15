@@ -22,7 +22,7 @@ TORTOISE_TEST_DB = PostgresDsn.build(
 
 
 @pytest.fixture(autouse=True)
-async def initialize_tests(request):
+async def initialize_tests():
     await _init_db(
         generate_config(
             TORTOISE_TEST_DB,
