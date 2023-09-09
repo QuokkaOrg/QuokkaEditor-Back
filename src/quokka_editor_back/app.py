@@ -61,14 +61,14 @@ html = """
         
         // Fetch the initial document content and version from the server
         async function fetchDocument() {
-            let response = await fetch('http://localhost:8100/documents/9dec324e-907e-403c-babc-aac644c64aa9');
+            let response = await fetch('http://localhost:8100/documents/d6313801-607a-4a7a-99b7-63df61940b15');
             let data = await response.json();
             editor.textContent = data.content;
         }
         
         // Synchronize the document with the server
         async function syncDocument() {
-            let response = await fetch('http://localhost:8100/documents/9dec324e-907e-403c-babc-aac644c64aa9/sync/', {
+            let response = await fetch('http://localhost:8100/documents/d6313801-607a-4a7a-99b7-63df61940b15/edit/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -91,11 +91,13 @@ html = """
                     type: 'INSERT',
                     pos: window.getSelection().focusOffset - 1,
                     char: event.data,
+                    revision: 0
                 };
             } else if (event.inputType === 'deleteContentBackward') {
                 op = {
                     type: 'DELETE',
                     pos: window.getSelection().focusOffset,
+                    revision: 0
                 };
             }
             

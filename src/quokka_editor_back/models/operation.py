@@ -10,5 +10,6 @@ class OperationType(StrEnum):
 class Operation(models.Model):
     id = fields.UUIDField(pk=True)
     pos = fields.IntField()
-    char = fields.CharField(max_length=255, null=True)
+    content = fields.CharField(max_length=255, null=True)
     type = fields.CharEnumField(OperationType)
+    revision = fields.BigIntField(null=True)  # TODO: remove null=True
