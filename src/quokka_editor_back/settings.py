@@ -24,6 +24,7 @@ TORTOISE_ORM = {
             "models": [
                 "quokka_editor_back.models.document",
                 "quokka_editor_back.models.user",
+                "quokka_editor_back.models.operation",
                 "aerich.models",
             ],
             "default_connection": "default",

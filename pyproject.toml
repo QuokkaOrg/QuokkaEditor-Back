@@ -21,6 +21,8 @@ python-multipart = "^0.0.6"
 passlib = {version = "^1.7.4", extras = ["bcrypt"]}
 python-jose = {version = "^3.3.0", extras = ["cryptography"]}
 pydantic = {version = "^1.10.9", extras = ["email"]}
+python3-crdt = "^1.0.3"
+httpx = "^0.24.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
