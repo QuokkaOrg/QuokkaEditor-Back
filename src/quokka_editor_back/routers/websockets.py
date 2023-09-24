@@ -2,7 +2,6 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from quokka_editor_back.routers.connection_manager import ConnectionManager
 
-
 router = APIRouter(
     tags=["websockets"],
 )
