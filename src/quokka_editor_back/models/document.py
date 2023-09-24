@@ -1,7 +1,6 @@
-from tortoise import models, fields
+from tortoise import fields, models
 
-from quokka_editor_back.models.operation import Operation
-
+from quokka_editor_back.models.operation import Operation, RevisionLog
 from quokka_editor_back.models.user import User
 
 
@@ -20,4 +19,7 @@ class Document(models.Model):
         related_name="operations",
         on_delete=fields.SET_NULL,
         through="document_operation",
+    )
+    recent_revision: fields.ForeignKeyRelation[RevisionLog] = fields.ForeignKeyField(
+        "quokka_editor_back.RevisionLog"
     )

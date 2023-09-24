@@ -1,5 +1,6 @@
 from enum import StrEnum
-from tortoise import models, fields
+
+from tortoise import fields, models
 
 
 class OperationType(StrEnum):
@@ -7,9 +8,15 @@ class OperationType(StrEnum):
     DELETE = "DELETE"
 
 
+class RevisionLog(models.Model):
+    id = fields.BigIntField(pk=True)
+    position = fields.BigIntField
+    operationType = fields.CharEnumField(OperationType)
+
+
 class Operation(models.Model):
     id = fields.UUIDField(pk=True)
     pos = fields.IntField()
     content = fields.CharField(max_length=255, null=True)
     type = fields.CharEnumField(OperationType)
-    revision = fields.BigIntField(null=True)  # TODO: remove null=True
+    revision = fields.BigIntField()
