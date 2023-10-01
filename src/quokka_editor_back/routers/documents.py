@@ -1,20 +1,21 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from starlette import status
 from tortoise.contrib.fastapi import HTTPNotFoundError
 from tortoise.exceptions import DoesNotExist
-from quokka_editor_back.models.operation import Operation, OperationType
-from quokka_editor_back.utils.ot import apply_operation, transform
 
 from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.operation import Operation, OperationType
 from quokka_editor_back.models.user import User
 from quokka_editor_back.routers.auth import get_current_user
-from fastapi import BackgroundTasks
+from quokka_editor_back.routers.connection_manager import ConnectionManager
+from quokka_editor_back.utils.ot import apply_operation, transform
 
 router = APIRouter(tags=["documents"])
+manager = ConnectionManager()
 
 
 class OperationIn(BaseModel):
@@ -124,20 +125,22 @@ async def sync_document_task(document: Document):
 
         # Save operation
         operations.append(op)
+        document.recent_revision = last_op
+
         await op.save()
         await document.operations.add(op)
         document.update_from_dict({"content": content.encode()})
         await document.save()
-        # TODO: websocket broadcast (ack, op_type) with revision
+        await manager.ack_message("ack", document.recent_revision)
 
 
 @router.post("/{document_id}/edit/")
 async def edit_document(
     document_id: UUID,
     # current_user: Annotated[User, Depends(get_current_user)],
-    # op: list[OperationIn],
+    op: OperationIn,
     background_tasks: BackgroundTasks,
 ):
     document = await get_document(document_id=document_id)
-    # PENDING_CHANGES.append(op[0])
+    PENDING_CHANGES.append(op)
     background_tasks.add_task(sync_document_task, document)

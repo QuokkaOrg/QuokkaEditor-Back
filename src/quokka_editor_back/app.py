@@ -1,13 +1,12 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 from tortoise import Tortoise, connections
 
-from quokka_editor_back.routers import users
+from quokka_editor_back.routers import auth, documents, users, websockets
 from quokka_editor_back.settings import TORTOISE_ORM
-from quokka_editor_back.routers import documents, websockets, auth
-from fastapi.responses import FileResponse, HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
