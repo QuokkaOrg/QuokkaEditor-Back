@@ -21,5 +21,5 @@ class Document(models.Model):
         through="document_operation",
     )
     recent_revision: fields.ForeignKeyRelation[RevisionLog] = fields.ForeignKeyField(
-        "quokka_editor_back.RevisionLog"
+        "quokka_editor_back.RevisionLog", null=True
     )

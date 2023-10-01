@@ -32,31 +32,27 @@ app.add_middleware(
 html = """
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Document Editor</title>
-    <style>
-        #editor {
-            border: 1px solid #ccc;
-            padding: 10px;
-            width: 100%;
-            min-height: 200px;
-            box-sizing: border-box;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Example</title>
 </head>
+
 <body>
-    <h1>Document Editor</h1>
-    
     <div id="editor" contenteditable="true"></div>
-    
-    <button id="sync">Synchronize</button>
-    
+
+    <hr> <!-- Horizontal line for visual separation -->
+
+    <div id="messages">
+        <h3>Received Messages:</h3>
+    </div>
+
     <script>
         let editor = document.getElementById('editor');
-        let syncButton = document.getElementById('sync');
-        
-        let operations = [];
+
+        // Connect to the WebSocket
+        var socket = new WebSocket('ws://localhost:8100/ws/d6313801-607a-4a7a-99b7-63df61940b15');
         
         // Fetch the initial document content and version from the server
         async function fetchDocument() {
@@ -64,23 +60,57 @@ html = """
             let data = await response.json();
             editor.textContent = data.content;
         }
-        
-        // Synchronize the document with the server
-        async function syncDocument() {
-            let response = await fetch('http://localhost:8100/documents/d6313801-607a-4a7a-99b7-63df61940b15/edit/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(operations)
-            });
-            
-            let data = await response.json();
-            editor.textContent = data.content;
-            
-            // Clear operations after sync
-            operations = [];
+        function insertAt(str, index, insertion) {
+            if (index < 0 || index > str.length) {
+                return str;
+            }
+            return str.slice(0, index) + insertion + str.slice(index);
         }
+        
+        function removeAt(str, index) {
+            if (index < 0 || index >= str.length) {
+                return str;
+            }
+            return str.slice(0, index) + str.slice(index + 1);
+        }
+
+        
+        // Connection established
+        socket.onopen = function (event) {
+            console.log('Connected to the WebSocket server.');
+        };
+
+        // Connection closed
+        socket.onclose = function (event) {
+            console.log('Disconnected from the WebSocket server.');
+        };
+
+        // Handle any errors that occur.
+        socket.onerror = function (error) {
+            console.error(`WebSocket Error: ${error}`);
+        };
+
+        // Handle incoming messages from the server.
+        socket.onmessage = function (event) {
+            console.log('Received message:', event.data);
+            try {
+                // Parse the incoming JSON data
+                const jsonData = JSON.parse(event.data);
+                if(jsonData["char"]) {
+                    editor.textContent = insertAt(editor.textContent, jsonData["pos"], jsonData["char"]);
+                }
+                if (jsonData["type"] == "DELETE") {
+                    editor.textContent = removeAt(editor.textContent, jsonData["pos"])
+                }
+                
+            } catch (error) {
+                console.error("Error parsing the WebSocket JSON data:", error);
+            }
+            // Append the message to the "messages" div
+            var msgDiv = document.createElement('div');
+            msgDiv.textContent = event.data;
+            document.getElementById('messages').appendChild(msgDiv);
+        };
         
         // Handle local edits and record them as operations
         editor.addEventListener('input', (event) => {
@@ -101,17 +131,17 @@ html = """
             }
             
             if (op !== null) {
-                operations.push(op);
+                console.log(op)
+                socket.send(JSON.stringify(op));
             }
         });
         
         // Handle sync button click
-        syncButton.addEventListener('click', syncDocument);
-        
         // Fetch initial document content when page loads
         fetchDocument();
     </script>
 </body>
+
 </html>
 """
 
