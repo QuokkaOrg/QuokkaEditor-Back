@@ -39,7 +39,7 @@ async def get_user(user_id: UUID) -> User:
 async def get_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await get_user(user_id=current_user)
+    return await get_user(user_id=current_user.id)
 
 
 @router.patch(
@@ -51,7 +51,7 @@ async def update_user(
     user_payload: UserSchema,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    user = await get_user(user_id=current_user)
+    user = await get_user(user_id=current_user.id)
     user.update_from_dict(
         {
             "username": user_payload.username,

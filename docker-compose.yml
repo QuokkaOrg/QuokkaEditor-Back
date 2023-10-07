@@ -24,4 +24,22 @@ services:
     ports:
       - "8100:8080"
     depends_on:
+      - rabbitmq
       - db
+
+  worker:
+    build: .
+    command: ["dramatiq", "quokka_editor_back.utils.actors", "--watch", "."]
+    environment:
+      - DEBUG=true
+      - DATABASE_DSN=postgres://quokka_editor_back:password@db:5432/quokka_editor_back
+    depends_on:
+      - rabbitmq
+      - db
+
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    container_name: "rabbitmq"
+    ports:
+      - "15672:15672"
+      - "5672:5672"

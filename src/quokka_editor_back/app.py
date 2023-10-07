@@ -2,11 +2,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
-from tortoise import Tortoise, connections
+from fastapi.responses import HTMLResponse
+from tortoise import Tortoise
+from tortoise.connection import connections
 
 from quokka_editor_back.routers import auth, documents, users, websockets
 from quokka_editor_back.settings import TORTOISE_ORM
+from quokka_editor_back.utils.actors import process_data
 
 
 @asynccontextmanager
@@ -52,11 +54,11 @@ html = """
         let editor = document.getElementById('editor');
 
         // Connect to the WebSocket
-        var socket = new WebSocket('ws://localhost:8100/ws/d6313801-607a-4a7a-99b7-63df61940b15');
+        var socket = new WebSocket('ws://localhost:8100/ws/7c406eb7-4ea4-4085-be27-6c40535dfd81');
         
         // Fetch the initial document content and version from the server
         async function fetchDocument() {
-            let response = await fetch('http://localhost:8100/documents/d6313801-607a-4a7a-99b7-63df61940b15');
+            let response = await fetch('http://localhost:8100/documents/7c406eb7-4ea4-4085-be27-6c40535dfd81');
             let data = await response.json();
             editor.textContent = data.content;
         }
@@ -144,6 +146,12 @@ html = """
 
 </html>
 """
+
+
+@app.get("/send-task/")
+async def send_task(message: str = "Hello, World!", sleep_int: int = 10):
+    process_data.send({"message": message, "sleep_int": sleep_int})
+    return {"message": "Task sent!"}
 
 
 @app.get("/")
