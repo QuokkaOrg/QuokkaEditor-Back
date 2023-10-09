@@ -28,12 +28,20 @@ services:
       - "8100:8080"
     depends_on:
       - redis
+      - rabbitmq
       - db
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
+
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    container_name: "rabbitmq"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
 
   worker:
     build: .
@@ -43,4 +51,5 @@ services:
       - DATABASE_DSN=postgres://quokka_editor_back:password@db:5432/quokka_editor_back
     depends_on:
       - redis
+      - rabbitmq
       - db
