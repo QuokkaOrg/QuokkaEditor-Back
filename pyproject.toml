@@ -26,6 +26,7 @@ httpx = "^0.24.1"
 dramatiq = {extras = ["rabbitmq", "watch"], version = "^1.14.2"}
 requests = "^2.31.0"
 asgiref = "^3.7.2"
+redis = "^5.0.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

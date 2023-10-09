@@ -8,7 +8,6 @@ from tortoise.connection import connections
 
 from quokka_editor_back.routers import auth, documents, users, websockets
 from quokka_editor_back.settings import TORTOISE_ORM
-from quokka_editor_back.utils.actors import process_data
 
 
 @asynccontextmanager
@@ -54,11 +53,11 @@ html = """
         let editor = document.getElementById('editor');
 
         // Connect to the WebSocket
-        var socket = new WebSocket('ws://localhost:8100/ws/7c406eb7-4ea4-4085-be27-6c40535dfd81');
+        var socket = new WebSocket('ws://localhost:8100/ws/9ddc0c9f-6265-461c-9c7b-2c48a3ef675d');
         
         // Fetch the initial document content and version from the server
         async function fetchDocument() {
-            let response = await fetch('http://localhost:8100/documents/7c406eb7-4ea4-4085-be27-6c40535dfd81');
+            let response = await fetch('http://localhost:8100/documents/9ddc0c9f-6265-461c-9c7b-2c48a3ef675d');
             let data = await response.json();
             editor.textContent = data.content;
         }
@@ -146,12 +145,6 @@ html = """
 
 </html>
 """
-
-
-@app.get("/send-task/")
-async def send_task(message: str = "Hello, World!", sleep_int: int = 10):
-    process_data.send({"message": message, "sleep_int": sleep_int})
-    return {"message": "Task sent!"}
 
 
 @app.get("/")
