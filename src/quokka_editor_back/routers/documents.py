@@ -19,7 +19,7 @@ router = APIRouter(tags=["documents"])
 
 class OperationIn(BaseModel):
     pos: int
-    char: str | None = None
+    content: str | None = None
     type: OperationType
     revision: int = Field(..., gte=0)
 

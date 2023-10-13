@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -23,7 +22,6 @@ async def forward_from_redis_to_websocket(websocket: WebSocket, document_id: UUI
                 await manager.broadcast(
                     message["data"].decode("utf-8"), websocket, document_id
                 )
-                print(f"{datetime.now()} finish {message['data']}")
     finally:
         await redis_client.close()
 
@@ -40,10 +38,8 @@ async def websocket_endpoint(websocket: WebSocket, document_id: UUID):
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"{datetime.now()} start {data}")
             await redis_client.rpush(f"document_operations_{document_id}", data)
 
-            print(await redis_client.exists(f"document_processing_{document_id}"))
             if not await redis_client.exists(f"document_processing_{document_id}"):
                 await redis_client.set(f"document_processing_{document_id}", 1)
                 transform_document.send(str(document_id), id(websocket))

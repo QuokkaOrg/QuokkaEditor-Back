@@ -9,29 +9,29 @@ def apply_operation(doc: str, op: Operation) -> str:
     return doc
 
 
-def transform(recent_op: Operation, prev_op: Operation) -> Operation:
-    if recent_op.type == OperationType.INSERT and prev_op.type == OperationType.INSERT:
-        if recent_op.pos < prev_op.pos:
-            return recent_op
+def transform(new_op: Operation, prev_op: Operation) -> Operation:
+    if new_op.type == OperationType.INSERT and prev_op.type == OperationType.INSERT:
+        if new_op.pos < prev_op.pos:
+            return new_op
         return Operation(
-            pos=prev_op.pos + 1, content=recent_op.content, type=OperationType.INSERT
+            pos=prev_op.pos + 1, content=new_op.content, type=OperationType.INSERT
         )
 
-    if recent_op.type == OperationType.INSERT and prev_op.type == OperationType.DELETE:
-        if recent_op.pos <= prev_op.pos:
-            return recent_op
+    if new_op.type == OperationType.INSERT and prev_op.type == OperationType.DELETE:
+        if new_op.pos <= prev_op.pos:
+            return new_op
         return Operation(
-            pos=recent_op.pos - 1, content=recent_op.content, type=OperationType.INSERT
+            pos=new_op.pos - 1, content=new_op.content, type=OperationType.INSERT
         )
 
-    if recent_op.type == OperationType.DELETE and prev_op.type == OperationType.INSERT:
-        if recent_op.pos < prev_op.pos:
-            return recent_op
-        return Operation(pos=recent_op.pos + 1, type=OperationType.DELETE)
+    if new_op.type == OperationType.DELETE and prev_op.type == OperationType.INSERT:
+        if new_op.pos < prev_op.pos:
+            return new_op
+        return Operation(pos=new_op.pos + 1, type=OperationType.DELETE)
 
-    if recent_op.type == OperationType.DELETE and prev_op.type == OperationType.DELETE:
-        if recent_op.pos <= prev_op.pos:
-            return recent_op
-        elif recent_op.pos > prev_op.pos:
-            return Operation(pos=recent_op.pos, type=OperationType.DELETE)
+    if new_op.type == OperationType.DELETE and prev_op.type == OperationType.DELETE:
+        if new_op.pos <= prev_op.pos:
+            return new_op
+        elif new_op.pos > prev_op.pos:
+            return Operation(pos=new_op.pos, type=OperationType.DELETE)
     raise Exception("Invalid operations")
