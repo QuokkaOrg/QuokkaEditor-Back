@@ -20,14 +20,12 @@
       let editor = document.getElementById("editor");
 
       // Connect to the WebSocket
-      var socket = new WebSocket(
-        "ws://localhost:8100/ws/327ddf5f-2288-4dc9-8af7-cde1437cd7ca"
-      );
+      var socket = new WebSocket("ws://localhost:8100/ws/{{ document_id }}");
 
       // Fetch the initial document content and version from the server
       async function fetchDocument() {
         let response = await fetch(
-          "http://localhost:8100/documents/327ddf5f-2288-4dc9-8af7-cde1437cd7ca"
+          "http://localhost:8100/documents/{{ document_id }}"
         );
         let data = await response.json();
         editor.textContent = data.content;

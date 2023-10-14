@@ -23,9 +23,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, debug=True)
 
-origins = [
-    "http://localhost:3000",
-]
+origins = ["http://localhost:3000", "http://192.168.1.12:3000"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,9 +34,11 @@ app.add_middleware(
 )
 
 
-@app.get("/mock-ui")
-async def get_mock_ui(request: Request):
-    return templates.TemplateResponse("mock-ui.html", {"request": request})
+@app.get("/mock-ui/{document_id}")
+async def get_mock_ui(request: Request, document_id: str):
+    return templates.TemplateResponse(
+        "mock-ui.html", {"request": request, "document_id": document_id}
+    )
 
 
 app.include_router(router=websockets.router, prefix="/ws")

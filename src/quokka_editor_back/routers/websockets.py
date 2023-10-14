@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -7,6 +8,7 @@ from quokka_editor_back.routers import manager
 from quokka_editor_back.utils.actors import transform_document
 from quokka_editor_back.utils.redis import get_redis
 
+logger = logging.getLogger(__name__)
 router = APIRouter(
     tags=["websockets"],
 )
@@ -37,7 +39,10 @@ async def websocket_endpoint(websocket: WebSocket, document_id: UUID):
 
     try:
         while True:
-            data = await websocket.receive_text()
+            data = (
+                await websocket.receive_text()
+            )  # TODO: add validation here with OperationSchema
+            logger.info(data)
             await redis_client.rpush(f"document_operations_{document_id}", data)
 
             if not await redis_client.exists(f"document_processing_{document_id}"):
