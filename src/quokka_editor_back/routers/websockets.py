@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from uuid import UUID
 
@@ -42,6 +43,10 @@ async def websocket_endpoint(websocket: WebSocket, document_id: UUID):
             data = (
                 await websocket.receive_text()
             )  # TODO: add validation here with OperationSchema
+            json_data = json.loads(data)
+            if json_data["type"] == "cursor":
+                await manager.broadcast(data, websocket, document_id=document_id)
+                continue
             logger.info(data)
             await redis_client.rpush(f"document_operations_{document_id}", data)
 
