@@ -1,8 +1,6 @@
 from quokka_editor_back.models.operation import (
-    Operation,
     OperationSchema,
     OperationType,
-    PosSchema,
 )
 
 # TODO: Use OperationSchema in transform function and apply new operation types
@@ -55,17 +53,3 @@ def apply_operation(document_content: list[str], op: OperationSchema) -> list[st
         raise Exception("Invalid Operation!!!!")
     document_content[start_line : end_line + 1] = combined
     return document_content
-
-
-if __name__ == "__main__":
-    result = apply_operation(
-        ["siema", "kurwa", "witam"],
-        OperationSchema(
-            from_pos=PosSchema(line=1, ch=2),
-            to_pos=PosSchema(line=1, ch=3),
-            text=[""],
-            type=OperationType.DELETE,
-            revision=0,
-        ),
-    )
-    print(result)

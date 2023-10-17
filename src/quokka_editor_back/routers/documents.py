@@ -9,11 +9,23 @@ from tortoise.contrib.fastapi import HTTPNotFoundError
 from tortoise.exceptions import DoesNotExist
 
 from quokka_editor_back.models.document import Document
-
+from quokka_editor_back.models.operation import OperationType
 from quokka_editor_back.models.user import User
+
 from quokka_editor_back.routers.auth import get_current_user
 
 router = APIRouter(tags=["documents"])
+
+
+class OperationIn(BaseModel):
+    pos: int
+    content: str | None = None
+    type: OperationType
+    revision: int = Field(..., gte=0)
+
+
+class OperationOut(OperationIn):
+    id: UUID
 
 
 class DocumentSchema(BaseModel):
