@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:13.2
+    ports:
+      - 58101:5432
+    environment:
+      - POSTGRES_USER=quokka_editor_back
+      - POSTGRES_PASSWORD=password
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_DEV: "true"
+    command: python -m quokka_editor_back run --debug
+    environment:
+      DEBUG: true
+      DATABASE_DSN: postgres://quokka_editor_back:password@db:5432/quokka_editor_back
+      REDIS_HOST: cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - ./src/quokka_editor_back:/app/src/quokka_editor_back
+    ports:
+      - "8100:8080"
+    depends_on:
+      - redis
+      - rabbitmq
+      - db
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    container_name: "rabbitmq"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+  worker:
+    build: .
+    command: ["dramatiq", "quokka_editor_back.utils.actors"]
+    environment:
+      - DEBUG=true
+      - DATABASE_DSN=postgres://quokka_editor_back:password@db:5432/quokka_editor_back
+    depends_on:
+      - redis
+      - rabbitmq
+      - db

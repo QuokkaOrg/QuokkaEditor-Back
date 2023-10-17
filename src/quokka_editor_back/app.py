@@ -1,13 +1,17 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
-from tortoise import Tortoise, connections
-
-from quokka_editor_back.routers import users
-from quokka_editor_back.settings import TORTOISE_ORM
-from src.quokka_editor_back.routers import documents, websockets, auth
-
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
+from tortoise import Tortoise
+from tortoise.connection import connections
+
+from quokka_editor_back.routers import auth, documents, users, websockets
+from quokka_editor_back.settings import TORTOISE_ORM
+
+MODULE_DIR = Path(__file__).parent.absolute()
+templates = Jinja2Templates(directory=MODULE_DIR / "templates")
 
 
 @asynccontextmanager
@@ -30,6 +34,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/mock-ui")
+async def get_mock_ui(request: Request):
+    return templates.TemplateResponse("mock-ui.html", {"request": request})
+
 
 app.include_router(router=websockets.router, prefix="/ws")
 app.include_router(router=documents.router, prefix="/documents")

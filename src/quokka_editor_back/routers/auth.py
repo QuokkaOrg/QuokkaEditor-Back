@@ -4,8 +4,8 @@ from pydantic import BaseModel, EmailStr, SecretStr
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 
-from quokka_editor_back.auth import Auth
 from quokka_editor_back.models.user import User
+from quokka_editor_back.utils.auth import Auth
 
 
 class Token(BaseModel):

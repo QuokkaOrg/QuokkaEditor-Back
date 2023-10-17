@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Annotated
 from uuid import UUID
 
@@ -8,10 +9,23 @@ from tortoise.contrib.fastapi import HTTPNotFoundError
 from tortoise.exceptions import DoesNotExist
 
 from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.operation import OperationType
 from quokka_editor_back.models.user import User
+
 from quokka_editor_back.routers.auth import get_current_user
 
 router = APIRouter(tags=["documents"])
+
+
+class OperationIn(BaseModel):
+    pos: int
+    content: str | None = None
+    type: OperationType
+    revision: int = Field(..., gte=0)
+
+
+class OperationOut(OperationIn):
+    id: UUID
 
 
 class DocumentSchema(BaseModel):
@@ -23,9 +37,11 @@ class DocumentResponse(DocumentSchema):
     id: UUID
 
 
-async def get_document(document_id: UUID, user: User) -> Document:
+async def get_document(document_id: UUID) -> Document:
     try:
-        return await Document.get(id=document_id, user=user)
+        document = await Document.get(id=document_id)
+        await document.fetch_related("operations")
+        return document
     except DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -34,8 +50,8 @@ async def get_document(document_id: UUID, user: User) -> Document:
 
 
 @router.get("/", response_model=list[DocumentResponse])
-async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
-    return await Document.filter(user=current_user)
+async def read_all():
+    return await Document.all().prefetch_related("operations")
 
 
 @router.post("/", response_model=DocumentResponse)
@@ -46,7 +62,7 @@ async def create_document(
     new_document = await Document.create(
         title=document_payload.title,
         content=document_payload.content.encode() if document_payload.content else None,
-        user=current_user,
+        user_id=current_user.id,
     )
     return new_document
 
@@ -58,9 +74,22 @@ async def create_document(
 )
 async def read_document(
     document_id: UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
+    # current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await get_document(document_id=document_id, user=current_user)
+    return await get_document(document_id=document_id)
+
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
+)
+async def delete_document(
+    document_id: UUID,
+    # current_user: Annotated[User, Depends(get_current_user)],
+):
+    document = await get_document(document_id=document_id)
+    await document.delete()
 
 
 @router.patch(
@@ -71,9 +100,9 @@ async def read_document(
 async def update_document(
     document_id: UUID,
     document_payload: DocumentSchema,
-    current_user: Annotated[User, Depends(get_current_user)],
+    # current_user: Annotated[User, Depends(get_current_user)],
 ):
-    document = await get_document(document_id=document_id, user=current_user)
+    document = await get_document(document_id=document_id)
     document.update_from_dict(
         {
             "title": document_payload.title,
@@ -82,18 +111,5 @@ async def update_document(
             else None,
         }
     )
-
+    await document.save()
     return document
-
-
-@router.delete(
-    "/{document_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
-)
-async def delete_document(
-    document_id: UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
-):
-    document = await get_document(document_id=document_id, user=current_user)
-    await document.delete()
