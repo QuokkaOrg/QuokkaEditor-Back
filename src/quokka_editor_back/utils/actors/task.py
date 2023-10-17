@@ -13,7 +13,6 @@ from quokka_editor_back.models.operation import (
     Operation,
     OperationSchema,
     OperationType,
-    PosSchema,
 )
 from quokka_editor_back.routers.documents import get_document
 from quokka_editor_back.utils.actors import dramatiq
