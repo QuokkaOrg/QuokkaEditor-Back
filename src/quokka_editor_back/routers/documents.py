@@ -1,4 +1,4 @@
-from copy import copy
+import json
 from typing import Annotated
 from uuid import UUID
 
@@ -30,7 +30,7 @@ class OperationOut(OperationIn):
 
 class DocumentSchema(BaseModel):
     title: str = Field(max_length=250)
-    content: str | None
+    content: list[str] | None
 
 
 class DocumentResponse(DocumentSchema):
@@ -49,19 +49,23 @@ async def get_document(document_id: UUID) -> Document:
         )
 
 
-@router.get("/", response_model=list[DocumentResponse])
+@router.get("/")  # TODO: add response_model
 async def read_all():
-    return await Document.all().prefetch_related("operations")
+    return (
+        await Document.all()
+    )  # TODO: add pydantic model as a serializer and reduce response objects to
 
 
-@router.post("/", response_model=DocumentResponse)
+@router.post("/")  # TODO: add response_model
 async def create_document(
     document_payload: DocumentSchema,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     new_document = await Document.create(
         title=document_payload.title,
-        content=document_payload.content.encode() if document_payload.content else None,
+        content=json.dumps(document_payload.content).encode()
+        if document_payload.content
+        else None,  # TODO: remove None
         user_id=current_user.id,
     )
     return new_document
@@ -69,7 +73,7 @@ async def create_document(
 
 @router.get(
     "/{document_id}",
-    response_model=DocumentResponse,
+    # response_model=DocumentResponse,
     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
 )
 async def read_document(
@@ -86,30 +90,31 @@ async def read_document(
 )
 async def delete_document(
     document_id: UUID,
-    # current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     document = await get_document(document_id=document_id)
     await document.delete()
 
 
-@router.patch(
-    "/{document_id}",
-    response_model=DocumentResponse,
-    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
-)
-async def update_document(
-    document_id: UUID,
-    document_payload: DocumentSchema,
-    # current_user: Annotated[User, Depends(get_current_user)],
-):
-    document = await get_document(document_id=document_id)
-    document.update_from_dict(
-        {
-            "title": document_payload.title,
-            "content": document_payload.content.encode()
-            if document_payload.content
-            else None,
-        }
-    )
-    await document.save()
-    return document
+# TODO: update this endpoint to use new document content
+# @router.patch(
+#     "/{document_id}",
+#     response_model=DocumentResponse,
+#     responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
+# )
+# async def update_document(
+#     document_id: UUID,
+#     document_payload: DocumentSchema,
+#     current_user: Annotated[User, Depends(get_current_user)],
+# ):
+#     document = await get_document(document_id=document_id)
+#     document.update_from_dict(
+#         {
+#             "title": document_payload.title,
+#             "content": document_payload.content.encode()
+#             if document_payload.content
+#             else None,
+#         }
+#     )
+#     await document.save()
+#     return document
