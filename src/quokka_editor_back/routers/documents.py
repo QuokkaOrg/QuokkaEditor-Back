@@ -2,7 +2,7 @@ import json
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from starlette import status
 from tortoise.contrib.fastapi import HTTPNotFoundError
@@ -50,7 +50,11 @@ async def get_document(document_id: UUID) -> Document:
 
 
 @router.get("/")  # TODO: add response_model
-async def read_all():
+async def read_all(search_phrase: str | None = Query(None)):
+    if search_phrase:
+        return (
+            await Document.filter(title__icontains=search_phrase)
+        )
     return (
         await Document.all()
     )  # TODO: add pydantic model as a serializer and reduce response objects to
