@@ -7,10 +7,9 @@ from fastapi import HTTPException
 from quokka_editor_back.routers.documents import get_document
 
 
-async def test_get_document(document):
-    document = await get_document(document.id)
-
-    assert document == document
+async def test_get_document(mocked_document):
+    document = await get_document(mocked_document.id)
+    assert mocked_document == document
 
 
 async def test_get_document_does_not_exist():

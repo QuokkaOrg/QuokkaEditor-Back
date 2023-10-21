@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
-from quokka_editor_back.app import app
+import httpx
+from quokka_editor_back.app import app as asgi_app
 
 import pytest
 from pydantic import PostgresDsn
@@ -44,9 +45,16 @@ async def initialize_tests():
 
 
 @pytest.fixture
-def client():
-    client = TestClient(app)
-    yield client
+async def fastapi_app():
+    return asgi_app
+
+
+@pytest.fixture
+async def client(fastapi_app):
+    async with httpx.AsyncClient(
+        app=fastapi_app, base_url="http://localhost:8100"
+    ) as test_client:
+        yield test_client
 
 
 @pytest.fixture
@@ -62,12 +70,9 @@ async def active_user() -> User:
 
 
 @pytest.fixture
-async def document() -> Document:
+async def mocked_document(active_user) -> Document:
     return await Document.create(
-        title=f"Sample title 1",
-        content="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut",
-        # labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-        # aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
-        # dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
-        # deserunt mollit anim id est laborum."""
+        title="Sample title 1",
+        content=b"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut",
+        user=active_user,
     )

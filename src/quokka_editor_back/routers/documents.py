@@ -51,13 +51,10 @@ async def get_document(document_id: UUID) -> Document:
 
 @router.get("/")  # TODO: add response_model
 async def read_all(search_phrase: str | None = Query(None)):
+    qs = Document.all()
     if search_phrase:
-        return (
-            await Document.filter(title__icontains=search_phrase)
-        )
-    return (
-        await Document.all()
-    )  # TODO: add pydantic model as a serializer and reduce response objects to
+        qs = qs.filter(title__icontains=search_phrase)
+    return await qs
 
 
 @router.post("/")  # TODO: add response_model
