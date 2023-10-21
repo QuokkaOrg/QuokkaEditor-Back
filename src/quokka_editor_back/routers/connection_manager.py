@@ -21,9 +21,17 @@ class ConnectionManager:
     async def ack_message(self, websocket: WebSocket, message: str, revision: int):
         await websocket.send_json({"message": message, "revision_log": revision})
 
-    async def broadcast(self, message: str, websocket: WebSocket, document_id: UUID):
+    async def broadcast(
+        self,
+        message: str,
+        websocket: WebSocket,
+        document_id: UUID,
+        revision: int | None = None,
+        send_to_owner: bool = True,
+    ):
         for connection in self.active_connections[document_id]:
             if websocket is connection:
-                await self.ack_message(websocket, "ACK", 0)
+                if send_to_owner:
+                    await self.ack_message(websocket, "ACK", revision)
             else:
                 await connection.send_text(message)

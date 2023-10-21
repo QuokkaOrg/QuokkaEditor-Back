@@ -39,7 +39,10 @@ async def async_document_task(
                     break
                 await apply_and_save_operation(new_op, document)
 
-            await redis_client.publish(f"{str(document_id)}_{websocket_id}", op_data)
+            await redis_client.publish(
+                f"{str(document_id)}_{websocket_id}",
+                json.dumps({"data": op_data, "revision": new_op.revision}),
+            )
     except Exception as err:
         logger.warning(err)
     finally:
@@ -68,10 +71,10 @@ async def transform_and_prepare_operation(
         for prev_op in await document.operations.filter(revision__gte=new_op.revision):
             prev_op_schema = OperationSchema(
                 from_pos=PosSchema.parse_raw(
-                    json.loads(prev_op.from_pos),
+                    prev_op.from_pos,
                 ),
                 to_pos=PosSchema.parse_raw(
-                    json.loads(prev_op.to_pos),
+                    prev_op.to_pos,
                 ),
                 text=json.loads(prev_op.text),
                 type=prev_op.type,
