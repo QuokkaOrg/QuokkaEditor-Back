@@ -15,7 +15,7 @@ from quokka_editor_back.models.operation import (
     PosSchema,
 )
 from quokka_editor_back.routers.documents import get_document
-from quokka_editor_back.utils.actors import dramatiq
+from quokka_editor_back.actors import dramatiq
 from quokka_editor_back.utils.ot import apply_operation, transform
 from quokka_editor_back.utils.redis import get_redis
 

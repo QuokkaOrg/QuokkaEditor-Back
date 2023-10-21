@@ -1,46 +1,30 @@
-import json
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+
 from starlette import status
-from tortoise.contrib.fastapi import HTTPNotFoundError
 from tortoise.exceptions import DoesNotExist
+from quokka_editor_back.auth.auth import (
+    create_access_token,
+    decode_access_token,
+    get_current_user,
+)
 
 from quokka_editor_back.models.document import Document
-from quokka_editor_back.models.operation import OperationType
 from quokka_editor_back.models.user import User
 
-from quokka_editor_back.routers.auth import get_current_user
 
 router = APIRouter(tags=["documents"])
 
 
-class OperationIn(BaseModel):
-    pos: int
-    content: str | None = None
-    type: OperationType
-    revision: int = Field(..., gte=0)
-
-
-class OperationOut(OperationIn):
-    id: UUID
-
-
-class DocumentSchema(BaseModel):
-    title: str = Field(max_length=250)
-    content: list[str] | None
-
-
-class DocumentResponse(DocumentSchema):
-    id: UUID
-
-
-async def get_document(document_id: UUID) -> Document:
+async def get_document(document_id: UUID, user: User | None = None) -> Document:
+    filters: dict[str, Any] = {"id": document_id}
+    if user:
+        filters["user"] = user
     try:
-        document = await Document.get(id=document_id)
-        await document.fetch_related("operations")
+        document = await Document.get(**filters)
         return document
     except DoesNotExist:
         raise HTTPException(
@@ -49,23 +33,17 @@ async def get_document(document_id: UUID) -> Document:
         )
 
 
-@router.get("/")  # TODO: add response_model
-async def read_all():
-    return (
-        await Document.all()
-    )  # TODO: add pydantic model as a serializer and reduce response objects to
+@router.get("/")
+async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
+    return await Document.all()
 
 
-@router.post("/")  # TODO: add response_model
+@router.post("/")
 async def create_document(
-    document_payload: DocumentSchema,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     new_document = await Document.create(
-        title=document_payload.title,
-        content=json.dumps(document_payload.content).encode()
-        if document_payload.content
-        else None,  # TODO: remove None
+        title="Draft Document",
         user_id=current_user.id,
     )
     return new_document
@@ -73,26 +51,29 @@ async def create_document(
 
 @router.get(
     "/{document_id}",
-    # response_model=DocumentResponse,
-    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
 )
 async def read_document(
     document_id: UUID,
-    # current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await get_document(document_id=document_id)
+    return await get_document(document_id=document_id, user=current_user)
+
+
+@router.get("/shared/{token}/")
+async def read_shared_document(token):
+    decoded_token = decode_access_token(token)
+    document = await get_document(document_id=uuid.UUID(decoded_token["document_id"]))
+    return {"document": document, "permissions": decoded_token["permissions"]}
 
 
 @router.delete(
     "/{document_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses={status.HTTP_404_NOT_FOUND: {"model": HTTPNotFoundError}},
 )
 async def delete_document(
     document_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    document = await get_document(document_id=document_id)
+    document = await get_document(document_id=document_id, user=current_user)
     await document.delete()
 
 
@@ -118,3 +99,17 @@ async def delete_document(
 #     )
 #     await document.save()
 #     return document
+
+
+@router.post("/share/{document_id}")
+async def share_document(
+    document_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    await get_document(document_id=document_id, user=current_user)
+
+    token = create_access_token(
+        data={"document_id": str(document_id), "permissions": "edit"}
+    )
+
+    return {"token": token}

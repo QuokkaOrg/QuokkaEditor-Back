@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from quokka_editor_back.routers import manager
-from quokka_editor_back.utils.actors import transform_document
+from quokka_editor_back.actors import transform_document
 from quokka_editor_back.utils.redis import get_redis
 
 logger = logging.getLogger(__name__)
