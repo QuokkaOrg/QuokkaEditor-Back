@@ -26,25 +26,32 @@ def decode_document_content(document):
     return json.loads((document.content or b"").decode())
 
 
-async def async_document_task(
-    document_id: str, websocket_id: str, *args, **kwargs
-) -> None:
+async def async_document_task(document_id: str, *args, **kwargs) -> None:
     redis_client: AsyncRedis = await get_redis()
     try:
         document = await get_document(document_id=uuid.UUID(document_id))
         async for op_data in fetch_operations_from_redis(redis_client, document_id):
+            loaded_op_data = json.loads(op_data)
+            token = loaded_op_data["token_id"]
             async with in_transaction():
-                new_op = await transform_and_prepare_operation(op_data, document)
+                new_op = await transform_and_prepare_operation(
+                    loaded_op_data["data"], document
+                )
                 if not new_op:
                     break
                 await apply_and_save_operation(new_op, document)
 
             await redis_client.publish(
-                f"{str(document_id)}_{websocket_id}",
-                json.dumps({"data": op_data, "revision": new_op.revision}),
+                f"{str(document_id)}_{token}",
+                json.dumps(
+                    {
+                        "data": json.dumps({**new_op.dict(), "token_id": token}),
+                        "revision": new_op.revision,
+                    }
+                ),
             )
     except Exception as err:
-        logger.warning(err)
+        logger.warning("THERE  IS AN ERROR %s", err)
     finally:
         await cleanup(redis_client, document_id)
 
@@ -66,9 +73,8 @@ async def transform_and_prepare_operation(
         logger.error("Invalid operation type")
         return None  # skip this operation
 
-    last_op = await document.operations.order_by("-revision").first()
-    if last_op and new_op.revision <= last_op.revision:
-        for prev_op in await document.operations.filter(revision__gte=new_op.revision):
+    if new_op.revision < document.last_revision:
+        for prev_op in await document.operations.filter(revision__gt=new_op.revision):
             prev_op_schema = OperationSchema(
                 from_pos=PosSchema.parse_raw(
                     prev_op.from_pos,
@@ -81,12 +87,13 @@ async def transform_and_prepare_operation(
                 revision=prev_op.revision,
             )
             new_op = transform(new_op, prev_op_schema)
-        new_op.revision = last_op.revision + 1
+    new_op.revision = document.last_revision + 1
     return new_op
 
 
 async def apply_and_save_operation(op: OperationSchema, document: Document) -> None:
     content = apply_operation(decode_document_content(document), op)
+    document.update_from_dict({"last_revision": op.revision})
     new_op = Operation(
         from_pos=op.from_pos.json(),
         to_pos=op.to_pos.json(),

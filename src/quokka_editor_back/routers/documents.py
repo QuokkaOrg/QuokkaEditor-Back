@@ -1,3 +1,4 @@
+import json
 from typing import Annotated, Any
 from uuid import UUID
 import uuid
@@ -45,6 +46,7 @@ async def create_document(
     new_document = await Document.create(
         title="Draft Document",
         user_id=current_user.id,
+        content=json.dumps([""]).encode(),
     )
     return new_document
 
@@ -56,7 +58,8 @@ async def read_document(
     document_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await get_document(document_id=document_id, user=current_user)
+    document = await get_document(document_id=document_id, user=current_user)
+    return document
 
 
 @router.get("/shared/{token}/")

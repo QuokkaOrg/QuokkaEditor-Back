@@ -20,3 +20,4 @@ class Document(models.Model):
         on_delete=fields.SET_NULL,
         through="document_operation",
     )
+    last_revision = fields.BigIntField(default=0)
