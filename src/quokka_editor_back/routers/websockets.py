@@ -60,7 +60,7 @@ async def websocket_endpoint(websocket: WebSocket, document_id: UUID, token: str
             new_data = {"data": data, "token_id": token}
             if json_data["type"] == "cursor":
                 await manager.broadcast(
-                    data, websocket, document_id=document_id, send_to_owner=False
+                    data, websocket, document_id=document_id, send_to_owner=False, token=token
                 )
                 continue
             logger.debug("Input data %s", data)
