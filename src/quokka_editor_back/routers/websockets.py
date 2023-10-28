@@ -4,6 +4,7 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from redis.asyncio import Redis as AsyncRedis
 
 from quokka_editor_back.actors import transform_document
 from quokka_editor_back.auth.utils import authenticate_websocket
@@ -40,7 +41,11 @@ async def forward_from_redis_to_websocket(
 
 
 async def process_websocket_message(
-    data: str, websocket, redis_client, document_id, user_token
+    data: str,
+    websocket: WebSocket,
+    redis_client: AsyncRedis,
+    document_id: UUID,
+    user_token: str,
 ):
     json_data = json.loads(data)
     new_data = json.dumps({"data": data, "user_token": user_token})
