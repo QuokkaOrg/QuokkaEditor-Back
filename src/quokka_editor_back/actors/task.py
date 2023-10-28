@@ -7,6 +7,7 @@ from redis.asyncio import Redis as AsyncRedis
 from tortoise.connection import connections
 from tortoise.transactions import in_transaction
 
+from quokka_editor_back.actors import dramatiq
 from quokka_editor_back.models.document import Document
 from quokka_editor_back.models.operation import (
     Operation,
@@ -15,7 +16,6 @@ from quokka_editor_back.models.operation import (
     PosSchema,
 )
 from quokka_editor_back.routers.documents import get_document
-from quokka_editor_back.actors import dramatiq
 from quokka_editor_back.utils.ot import apply_operation, transform
 from quokka_editor_back.utils.redis import get_redis
 
@@ -32,7 +32,7 @@ async def async_document_task(document_id: str, *args, **kwargs) -> None:
         document = await get_document(document_id=uuid.UUID(document_id))
         async for op_data in fetch_operations_from_redis(redis_client, document_id):
             loaded_op_data = json.loads(op_data)
-            token = loaded_op_data["token_id"]
+            user_token = loaded_op_data["user_token"]
             async with in_transaction():
                 new_op = await transform_and_prepare_operation(
                     loaded_op_data["data"], document
@@ -42,10 +42,10 @@ async def async_document_task(document_id: str, *args, **kwargs) -> None:
                 await apply_and_save_operation(new_op, document)
 
             await redis_client.publish(
-                f"{str(document_id)}_{token}",
+                f"{str(document_id)}_{user_token}",
                 json.dumps(
                     {
-                        "data": json.dumps({**new_op.dict(), "token_id": token}),
+                        "data": json.dumps({**new_op.dict(), "user_token": user_token}),
                         "revision": new_op.revision,
                     }
                 ),
@@ -109,8 +109,6 @@ async def apply_and_save_operation(op: OperationSchema, document: Document) -> N
 
 
 async def cleanup(redis_client: AsyncRedis, document_id: str) -> None:
-    if op := await redis_client.lpop(f"document_operations_{document_id}"):
-        logger.warning("WARNING THERE IS STILL SOMETHING TO PROCESS %s", op)
     await redis_client.delete(f"document_processing_{document_id}")
     await connections.close_all()
 

@@ -1,7 +1,15 @@
+from enum import StrEnum
+
 from tortoise import fields, models
 
 from quokka_editor_back.models.operation import Operation
 from quokka_editor_back.models.user import User
+
+
+class ShareRole(StrEnum):
+    READ = "READ"
+    COMMENT = "COMMENT"
+    EDIT = "EDIT"
 
 
 class Document(models.Model):
@@ -21,3 +29,5 @@ class Document(models.Model):
         through="document_operation",
     )
     last_revision = fields.BigIntField(default=0)
+    shared_role = fields.CharEnumField(ShareRole, default=ShareRole.READ)
+    shared_by_link = fields.BooleanField(default=False)

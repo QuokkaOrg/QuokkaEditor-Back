@@ -19,13 +19,13 @@ class ConnectionManager:
         await websocket.send_text(message)
 
     async def ack_message(
-        self, websocket: WebSocket, message: str, revision: int, token: str
+        self, websocket: WebSocket, message: str, revision: int, user_token: str
     ):
         await websocket.send_json(
             {
                 "message": message,
                 "revision_log": revision,
-                "token_id": token,
+                "user_token": user_token,
             }
         )
 
@@ -34,13 +34,13 @@ class ConnectionManager:
         message: str,
         websocket: WebSocket,
         document_id: UUID,
-        token: str,
+        user_token: str,
         revision: int | None = None,
         send_to_owner: bool = True,
     ):
         for connection in self.active_connections[document_id]:
             if websocket is connection:
                 if send_to_owner:
-                    await self.ack_message(websocket, "ACK", revision, token)
+                    await self.ack_message(websocket, "ACK", revision, user_token)
             else:
                 await connection.send_text(message)

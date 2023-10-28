@@ -2,11 +2,9 @@ from fastapi import APIRouter, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials
 from starlette import status
 
-
+from quokka_editor_back.auth import auth_handler, security
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.auth import UserCreate, UserLogin
-from quokka_editor_back.auth.auth import auth_handler, security
-
 
 router = APIRouter(tags=["auth"])
 

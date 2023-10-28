@@ -1,11 +1,9 @@
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
-from tortoise import Tortoise
-from tortoise.connection import connections
+from tortoise.contrib.fastapi import register_tortoise
 
 from quokka_editor_back.routers import auth, documents, users, websockets
 from quokka_editor_back.settings import TORTOISE_ORM
@@ -14,14 +12,7 @@ MODULE_DIR = Path(__file__).parent.absolute()
 templates = Jinja2Templates(directory=MODULE_DIR / "templates")
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await Tortoise.init(config=TORTOISE_ORM)
-    yield
-    await connections.close_all()
-
-
-app = FastAPI(lifespan=lifespan, debug=True)
+app = FastAPI(debug=True)
 
 origins = ["*"]
 
@@ -45,3 +36,10 @@ app.include_router(router=websockets.router, prefix="/ws")
 app.include_router(router=documents.router, prefix="/documents")
 app.include_router(router=auth.router, prefix="/auth")
 app.include_router(router=users.router, prefix="/users")
+
+register_tortoise(
+    app,
+    config=TORTOISE_ORM,
+    generate_schemas=True,
+    add_exception_handlers=True,
+)

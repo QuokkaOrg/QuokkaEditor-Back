@@ -1,4 +1,5 @@
 import logging
+
 from quokka_editor_back.models.operation import (
     OperationSchema,
     OperationType,
@@ -86,7 +87,6 @@ def apply_operation(document_content: list[str], op: OperationSchema) -> list[st
     start_line, start_ch = op.from_pos.line, op.from_pos.ch
     end_line, end_ch = op.to_pos.line, op.to_pos.ch
 
-    logger.warning("APPLYING OP %s", op)
     before = document_content[start_line][:start_ch]
     middle = op.text
     after = document_content[end_line][end_ch:]
