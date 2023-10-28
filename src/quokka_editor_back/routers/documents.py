@@ -6,9 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 
-from quokka_editor_back.auth.utils import (
-    get_current_user,
-)
+from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.document import DocumentPayload, ShareInput
@@ -97,7 +95,7 @@ async def share_document(
     payload: ShareInput,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    document = await get_document(document_id=document_id, user=current_user)
+    document = await get_document(document_id=document_id)
     document.update_from_dict(payload.dict())
     await document.save()
     return Status(message=f"Shared document {document_id}")

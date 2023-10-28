@@ -1,11 +1,6 @@
 from uuid import UUID
 
-from fastapi import (
-    HTTPException,
-    Security,
-    WebSocketException,
-    status,
-)
+from fastapi import HTTPException, Security, WebSocketException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from tortoise.exceptions import DoesNotExist
 

@@ -12,3 +12,6 @@ migrate:
 
 add-migration:
 	docker compose run --rm --service-ports --no-deps api aerich migrate
+
+run-tests:
+	docker compose run --rm --service-ports --no-deps api pytest

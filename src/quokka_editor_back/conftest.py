@@ -1,31 +1,29 @@
+import json
+
 import pytest
-from pydantic import PostgresDsn
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from tortoise import Tortoise
 from tortoise.backends.base.config_generator import generate_config
 from tortoise.contrib.test import _init_db
 
+from quokka_editor_back.app import app as asgi_app
+from quokka_editor_back.auth.utils import get_current_user
+from quokka_editor_back.models.document import Document
 from quokka_editor_back.models.user import User
-from quokka_editor_back.settings import TORTOISE_ORM, settings
+from quokka_editor_back.settings import TORTOISE_ORM
 
-TORTOISE_TEST_DB = PostgresDsn.build(
-    scheme=settings.database_dsn.scheme,
-    user=settings.database_dsn.user,
-    password=settings.database_dsn.password,
-    host=settings.database_dsn.host,
-    tld=settings.database_dsn.tld,
-    host_type=settings.database_dsn.host_type,
-    port=settings.database_dsn.port,
-    path=f"{settings.database_dsn.path}_TEST_{{}}",
-    query=settings.database_dsn.query,
-    fragment=settings.database_dsn.fragment,
-)
+
+@pytest.fixture
+async def fastapi_app():
+    return asgi_app
 
 
 @pytest.fixture(autouse=True)
-async def initialize_tests():
+async def initialize_tests(request):
     await _init_db(
         generate_config(
-            TORTOISE_TEST_DB,
+            "sqlite:///tmp/test-{}.sqlite",
             app_modules={
                 "quokka_editor_back": TORTOISE_ORM["apps"]["quokka_editor_back"][
                     "models"
@@ -33,10 +31,15 @@ async def initialize_tests():
             },
             testing=True,
             connection_label="quokka_editor_back",
-        ),
+        )
     )
     yield
     await Tortoise._drop_databases()
+
+
+@pytest.fixture
+async def client() -> TestClient:
+    return TestClient(app=asgi_app)
 
 
 @pytest.fixture
@@ -49,3 +52,19 @@ async def active_user() -> User:
         hashed_password="",
         is_active=True,
     )
+
+
+@pytest.fixture
+async def document(active_user: User) -> Document:
+    return await Document.create(
+        title="test_document",
+        content=json.dumps(["test"]).encode(),
+        user=active_user,
+    )
+
+
+@pytest.fixture
+async def mock_get_current_user(fastapi_app: FastAPI, active_user: User):
+    fastapi_app.dependency_overrides[get_current_user] = lambda: active_user
+    yield
+    fastapi_app.dependency_overrides.pop(get_current_user)

@@ -38,7 +38,7 @@ settings = Settings()
 BASE_PATH = Path(__file__).parent.resolve()
 
 TORTOISE_ORM = {
-    "connections": {"default": settings.database_dsn},
+    "connections": {"quokka_editor_back": settings.database_dsn},
     "apps": {
         "quokka_editor_back": {
             "models": [
@@ -47,7 +47,7 @@ TORTOISE_ORM = {
                 "quokka_editor_back.models.operation",
                 "aerich.models",
             ],
-            "default_connection": "default",
+            "default_connection": "quokka_editor_back",
         },
     },
 }
