@@ -21,5 +21,4 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; els
 COPY src/quokka_editor_back ./src/quokka_editor_back
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install ; else poetry install --no-dev ; fi"
 
-ENTRYPOINT ["/bin/bash", "docker-entrypoint.sh"]
 EXPOSE 8080
