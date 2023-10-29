@@ -7,7 +7,7 @@ from starlette import status
 from tortoise.exceptions import DoesNotExist
 
 from quokka_editor_back.auth.utils import get_current_user
-from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.document import Document, DocumentTemplate
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.document import DocumentPayload, ShareInput
 from quokka_editor_back.schema.utils import Status
@@ -15,7 +15,10 @@ from quokka_editor_back.schema.utils import Status
 router = APIRouter(tags=["documents"])
 
 
-async def get_document(document_id: UUID, user: User | None = None) -> Document:
+async def get_document(
+    document_id: UUID,
+    user: User | None = None,
+) -> Document:
     filters: dict[str, Any] = {"id": document_id}
     if user:
         filters["user"] = user
@@ -37,11 +40,26 @@ async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
 @router.post("/")
 async def create_document(
     current_user: Annotated[User, Depends(get_current_user)],
+    template_id: UUID | None = None,
 ):
+    title = "Draft Document"
+    content = json.dumps([""]).encode()
+
+    if template_id:
+        try:
+            document_template = await DocumentTemplate.get(id=template_id)
+        except DoesNotExist as err:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document Template {template_id} not found",
+            ) from err
+        title = document_template.title
+        content = document_template.content
+
     new_document = await Document.create(
-        title="Draft Document",
+        title=title,
         user_id=current_user.id,
-        content=json.dumps([""]).encode(),
+        content=content,
     )
     return new_document
 
@@ -77,14 +95,10 @@ async def update_document(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     document = await get_document(document_id=document_id)
-    document.update_from_dict(
-        {
-            "title": document_payload.title,
-            "content": json.dumps(document_payload.content).encode()
-            if document_payload.content
-            else None,
-        }
-    )
+    if document_payload.title:
+        document.title = document_payload.title
+    if document_payload.content:
+        document.content = json.dumps(document_payload.content).encode()
     await document.save()
     return document
 

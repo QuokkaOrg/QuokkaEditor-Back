@@ -5,7 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from tortoise.contrib.fastapi import register_tortoise
 
-from quokka_editor_back.routers import auth, documents, users, websockets
+from quokka_editor_back.routers import (
+    auth,
+    document_templates,
+    documents,
+    users,
+    websockets,
+)
 from quokka_editor_back.settings import TORTOISE_ORM
 
 MODULE_DIR = Path(__file__).parent.absolute()
@@ -34,6 +40,7 @@ async def get_mock_ui(request: Request, document_id: str):
 
 app.include_router(router=websockets.router, prefix="/ws")
 app.include_router(router=documents.router, prefix="/documents")
+app.include_router(router=document_templates.router, prefix="/templates")
 app.include_router(router=auth.router, prefix="/auth")
 app.include_router(router=users.router, prefix="/users")
 
