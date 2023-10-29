@@ -67,7 +67,7 @@ async def process_websocket_message(
         )
         return
 
-    logger.debug("Input data %s", data)
+    logger.debug("Input data %s", new_data)
 
     if read_only:
         return
@@ -103,13 +103,19 @@ async def websocket_endpoint(
                 read_only=read_only,
             )
     except WebSocketDisconnect:
-        await manager.broadcast(
-            message=f"User {user_id or 'Anonymous'} Disconnected from the file.",
-            websocket=websocket,
-            document_id=document_id,
-            user_token=user_token,
-        )
         listen_task.cancel()
     finally:
         manager.disconnect(websocket, document_id)
+        await manager.broadcast(
+            message=json.dumps(
+                {
+                    "message": f"User {user_token} Disconnected from the file.",
+                    "user_token": user_token,
+                }
+            ),
+            websocket=websocket,
+            document_id=document_id,
+            user_token=user_token,
+            send_to_owner=False,
+        )
         await redis_client.close()
