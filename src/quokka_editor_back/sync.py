@@ -5,7 +5,6 @@ import httpx
 
 async def test_sync():
     async with httpx.AsyncClient() as client:
-        print("1")
         await client.post(
             url="http://localhost:8100/documents/8fa4e12a-5bce-47c5-87c2-f3211dbd9f19/sync/",
             json=[

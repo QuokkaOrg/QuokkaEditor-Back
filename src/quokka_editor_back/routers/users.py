@@ -2,33 +2,25 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from starlette import status
 from tortoise.contrib.fastapi import HTTPNotFoundError
 from tortoise.exceptions import DoesNotExist
 
+from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.user import User
-from quokka_editor_back.routers.auth import get_current_user
+from quokka_editor_back.schema.user import UserSchema
 
 router = APIRouter(tags=["users"])
-
-
-class UserSchema(BaseModel):
-    username: str
-    email: str | None = None
-    first_name: str | None = None
-    last_name: str | None = None
-    is_active: bool | None = None
 
 
 async def get_user(user_id: UUID) -> User:
     try:
         return await User.get(id=user_id)
-    except DoesNotExist:
+    except DoesNotExist as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Document {user_id} not found",
-        )
+        ) from err
 
 
 @router.get(

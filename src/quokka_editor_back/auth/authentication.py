@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException
+from fastapi import (
+    HTTPException,
+    status,
+)
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import SecretStr
-from starlette import status
 
 from quokka_editor_back.settings import settings
 
@@ -32,14 +34,14 @@ class Auth:
         try:
             payload = jwt.decode(token, self.secret, algorithms=[settings.algorithm])
             return payload["sub"]
-        except ExpiredSignatureError:
+        except ExpiredSignatureError as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
-            )
-        except JWTError:
+            ) from err
+        except JWTError as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-            )
+            ) from err
 
     def refresh_token(self, expired_token):
         try:
@@ -52,7 +54,7 @@ class Auth:
             username = payload["sub"]
             new_token = self.encode_token(username)
             return {"token": new_token}
-        except JWTError:
+        except JWTError as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
-            )
+            ) from err

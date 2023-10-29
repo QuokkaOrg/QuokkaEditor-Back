@@ -1,54 +1,12 @@
 from fastapi import APIRouter, HTTPException, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, EmailStr, SecretStr
+from fastapi.security import HTTPAuthorizationCredentials
 from starlette import status
-from tortoise.exceptions import DoesNotExist
 
+from quokka_editor_back.auth import auth_handler, security
 from quokka_editor_back.models.user import User
-from quokka_editor_back.utils.auth import Auth
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: SecretStr
-
-
-class UserLogin(BaseModel):
-    username: str
-    password: SecretStr
-
-
-security = HTTPBearer()
-auth_handler = Auth()
+from quokka_editor_back.schema.auth import UserCreate, UserLogin
 
 router = APIRouter(tags=["auth"])
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Security(security),
-):
-    token = credentials.credentials
-
-    username = auth_handler.decode_token(token=token)
-    try:
-        user = await User.get(username=username)
-    except DoesNotExist:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-
-    return user
 
 
 @router.post(

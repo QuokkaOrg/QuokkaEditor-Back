@@ -15,7 +15,7 @@ services:
       dockerfile: Dockerfile
       args:
         INSTALL_DEV: "true"
-    command: python -m quokka_editor_back run --debug
+    command: python -m quokka_editor_back run
     environment:
       DEBUG: true
       DATABASE_DSN: postgres://quokka_editor_back:password@db:5432/quokka_editor_back
@@ -45,7 +45,7 @@ services:
 
   worker:
     build: .
-    command: ["dramatiq", "quokka_editor_back.utils.actors"]
+    command: ["dramatiq", "quokka_editor_back.actors"]
     environment:
       - DEBUG=true
       - DATABASE_DSN=postgres://quokka_editor_back:password@db:5432/quokka_editor_back
