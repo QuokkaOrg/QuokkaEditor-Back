@@ -1,8 +1,10 @@
+import contextlib
 import json
 from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 
@@ -34,7 +36,7 @@ async def get_document(
 
 @router.get("/")
 async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
-    return await Document.all()
+    return await Document.filter(user=current_user)
 
 
 @router.post("/")
@@ -64,14 +66,31 @@ async def create_document(
     return new_document
 
 
-@router.get(
-    "/{document_id}",
-)
+def has_access(document: Document, current_user: User | None):
+    if document.shared_by_link:
+        return True
+    if current_user and document.user == current_user:
+        return True
+    return False
+
+
+@router.get("/{document_id}")
 async def read_document(
-    document_id: UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
+    document_id: UUID, credentials: HTTPAuthorizationCredentials | None = None
 ):
-    document = await get_document(document_id=document_id, user=current_user)
+    document = await get_document(document_id=document_id)
+    current_user = None
+
+    if credentials:
+        with contextlib.suppress(HTTPException):
+            current_user = await get_current_user(credentials)
+
+    if not has_access(document, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {document_id} not found",
+        )
+
     return document
 
 

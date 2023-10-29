@@ -13,4 +13,4 @@ To run linter:
 1. `ruff . --fix`
 
 To add migration:
-1. `make add-migration --name "name of the migration"`
+1. `make add-migration`
