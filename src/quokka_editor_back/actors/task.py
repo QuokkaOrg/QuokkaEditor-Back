@@ -65,9 +65,9 @@ async def fetch_operations_from_redis(redis_client: AsyncRedis, document_id: str
 
 
 async def transform_and_prepare_operation(
-    op_data: str, document: Document
+    op_data: dict, document: Document
 ) -> OperationSchema | None:
-    new_op = OperationSchema.parse_raw(op_data)
+    new_op = OperationSchema(**op_data)
 
     if new_op.type.value not in OperationType.list():
         logger.error("Invalid operation type")

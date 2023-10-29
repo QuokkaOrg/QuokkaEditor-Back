@@ -31,3 +31,9 @@ class Document(models.Model):
     last_revision = fields.BigIntField(default=0)
     shared_role = fields.CharEnumField(ShareRole, default=ShareRole.READ)
     shared_by_link = fields.BooleanField(default=False)
+
+
+class DocumentTemplate(models.Model):
+    id = fields.UUIDField(pk=True)
+    title = fields.CharField(max_length=250)
+    content = fields.BinaryField(null=True)
