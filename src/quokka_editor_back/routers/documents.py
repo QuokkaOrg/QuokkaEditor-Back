@@ -26,7 +26,7 @@ async def get_document(
     if user:
         filters["user"] = user
     try:
-        document = await Document.get(**filters)
+        document = await Document.get(**filters).prefetch_related("user")
         return document
     except DoesNotExist as err:
         raise HTTPException(
