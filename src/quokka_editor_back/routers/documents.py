@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 
-from quokka_editor_back.auth import security
+from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document, DocumentTemplate
 from quokka_editor_back.models.user import User
@@ -78,7 +78,7 @@ def has_access(document: Document, current_user: User | None):
 @router.get("/{document_id}")
 async def read_document(
     document_id: UUID,
-    credentials: HTTPAuthorizationCredentials | None = Security(security),
+    credentials: HTTPAuthorizationCredentials = Security(optional_security),
 ):
     document = await get_document(document_id=document_id)
     current_user = None
