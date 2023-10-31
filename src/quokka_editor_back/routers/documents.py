@@ -3,6 +3,7 @@ import json
 from typing import Annotated, Any
 from uuid import UUID
 
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination.ext.tortoise import paginate
@@ -11,6 +12,7 @@ from starlette import status
 from tortoise.exceptions import DoesNotExist
 from tortoise.expressions import Q
 
+from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document, DocumentTemplate
 from quokka_editor_back.models.user import User
@@ -28,7 +30,7 @@ async def get_document(
     if user:
         filters["user"] = user
     try:
-        document = await Document.get(**filters)
+        document = await Document.get(**filters).prefetch_related("user")
         return document
     except DoesNotExist as err:
         raise HTTPException(
@@ -86,7 +88,8 @@ def has_access(document: Document, current_user: User | None):
 
 @router.get("/{document_id}")
 async def read_document(
-    document_id: UUID, credentials: HTTPAuthorizationCredentials | None = None
+    document_id: UUID,
+    credentials: HTTPAuthorizationCredentials = Security(optional_security),
 ):
     document = await get_document(document_id=document_id)
     current_user = None
