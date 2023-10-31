@@ -3,10 +3,14 @@ import json
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi_pagination.ext.tortoise import paginate
+from fastapi_pagination import add_pagination, Page
 from starlette import status
 from tortoise.exceptions import DoesNotExist
+from tortoise.expressions import Q
 
 from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
@@ -35,12 +39,19 @@ async def get_document(
         ) from err
 
 
-@router.get("/")
-async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
-    return await Document.filter(user=current_user)
+@router.get("/", response_model=Page)
+async def read_all(
+    current_user: Annotated[User, Depends(get_current_user)],
+    search_phrase: str | None = Query(None),
+):
+    qs = Document.all()
+    if search_phrase:
+        qs = qs.filter(Q(title__icontains=search_phrase))
+
+    return await paginate(query=qs.order_by("-id"))
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_document(
     current_user: Annotated[User, Depends(get_current_user)],
     template_id: UUID | None = None,
@@ -96,7 +107,7 @@ async def read_document(
     return document
 
 
-@router.delete("/{document_id}", response_model=Status)
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -104,7 +115,6 @@ async def delete_document(
     is_deleted = await Document.filter(id=document_id, user=current_user).delete()
     if not is_deleted:
         raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
-    return Status(message=f"Deleted document {document_id}")
 
 
 @router.patch(
@@ -134,3 +144,6 @@ async def share_document(
     document.update_from_dict(payload.dict())
     await document.save()
     return Status(message=f"Shared document {document_id}")
+
+
+add_pagination(router)
