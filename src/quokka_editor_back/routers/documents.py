@@ -69,9 +69,9 @@ async def create_document(
         content = document_template.content
 
     new_document = await Document.create(
-        title="Draft Document",
+        title=title,
         user_id=current_user.id,
-        content=json.dumps([""]).encode(),
+        content=content,
     )
     return new_document
 
