@@ -3,13 +3,15 @@ import json
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 from tortoise import Tortoise
 from tortoise.backends.base.config_generator import generate_config
 from tortoise.contrib.test import _init_db
 
 from quokka_editor_back.app import app as asgi_app
+from quokka_editor_back.auth import auth_handler
 from quokka_editor_back.auth.utils import get_current_user
-from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.document import Document, DocumentTemplate
 from quokka_editor_back.models.user import User
 from quokka_editor_back.settings import TORTOISE_ORM
 
@@ -49,7 +51,7 @@ async def active_user() -> User:
         email="test@test.com",
         first_name="tester",
         last_name="test",
-        hashed_password="",
+        hashed_password=auth_handler.encode_password(SecretStr("super_secret_password")),
         is_active=True,
     )
 
@@ -60,6 +62,14 @@ async def document(active_user: User) -> Document:
         title="test_document",
         content=json.dumps(["test"]).encode(),
         user=active_user,
+    )
+
+
+@pytest.fixture
+async def document_template() -> DocumentTemplate:
+    return await DocumentTemplate.create(
+        title="test_document_template",
+        content=json.dumps(["sample", "text"]).encode()
     )
 
 

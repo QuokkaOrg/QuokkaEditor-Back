@@ -3,21 +3,25 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi_pagination import Page, add_pagination
+from fastapi_pagination.ext.tortoise import paginate
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import DocumentTemplate
 from quokka_editor_back.models.user import User
-from quokka_editor_back.schema.document import DocumentPayload
-from quokka_editor_back.schema.utils import Status
+from quokka_editor_back.schema.document_template import (
+    DocumentTemplateCreatePayload,
+    DocumentTemplateUpdatePayload,
+)
 
 router = APIRouter(tags=["document_templates"])
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_template(
-    payload: DocumentPayload,
+    payload: DocumentTemplateCreatePayload,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     new_document = await DocumentTemplate.create(
@@ -27,9 +31,10 @@ async def create_template(
     return new_document
 
 
-@router.get("/")
+@router.get("/", response_model=Page)
 async def read_all(current_user: Annotated[User, Depends(get_current_user)]):
-    return await DocumentTemplate.all()
+    qs = DocumentTemplate.all()
+    return await paginate(query=qs.order_by("-id"))
 
 
 @router.get("/{template_id}")
@@ -51,7 +56,7 @@ async def get_template(
 )
 async def update_template(
     template_id: UUID,
-    payload: DocumentPayload,
+    payload: DocumentTemplateUpdatePayload,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
@@ -70,7 +75,7 @@ async def update_template(
     return document_template
 
 
-@router.delete("/{template_id}", response_model=Status)
+@router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -81,4 +86,6 @@ async def delete_template(
             status_code=404,
             detail=f"Document Template{template_id} not found",
         )
-    return Status(message=f"Deleted document Template {template_id}")
+
+
+add_pagination(router)

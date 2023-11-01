@@ -7,7 +7,10 @@ from fastapi.testclient import TestClient
 
 from quokka_editor_back.models.document import Document, ShareRole
 from quokka_editor_back.models.user import User
-from quokka_editor_back.schema.document import DocumentPayload, ShareInput
+from quokka_editor_back.schema.document import (
+    DocumentUpdatePayload,
+    ShareInput,
+)
 
 
 async def test_share_document(
@@ -26,7 +29,7 @@ async def test_share_document(
 
     # Then
     result_json = result.json()
-    assert result.status_code == status.HTTP_200_OK
+    assert result.status_code == status.HTTP_201_CREATED
     assert result_json == {"message": f"Shared document {document.id}"}
     await document.refresh_from_db()
     assert document.shared_role == ShareRole.EDIT
@@ -164,10 +167,16 @@ async def test_check_create_document(
 
 
 async def test_get_document_details(
-    client: TestClient, mock_get_current_user, document: Document, active_user: User
+    client: TestClient, document: Document, active_user: User, mocker
 ):
+    mock = mocker.AsyncMock(return_value=active_user)
+    mocked_get_current_user = mocker.patch(
+        "quokka_editor_back.routers.documents.get_current_user", mock
+    )
     # When
-    response = client.get(url=f"/documents/{document.id}/")
+    response = client.get(
+        url=f"/documents/{document.id}/", headers={"authorization": "Bearer Fake"}
+    )
     json_response = response.json()
 
     # Then
@@ -175,6 +184,7 @@ async def test_get_document_details(
     assert json_response["title"] == "test_document"
     assert json_response["content"] == '["test"]'
     assert json_response["user_id"] == str(active_user.id)
+    mocked_get_current_user.assert_called_once()
 
 
 async def test_get_document_details_invalid_uuid(
@@ -188,7 +198,7 @@ async def test_get_document_details_invalid_uuid(
 
 
 async def test_document_details_invalid_post_method(
-    client: TestClient, mock_get_current_user, document: Document, active_user: User
+    client: TestClient, mock_get_current_user, active_user: User
 ):
     # When
     response = client.post(url=f"/documents/{uuid.uuid4()}/")
@@ -207,22 +217,63 @@ async def test_document_delete(
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-@pytest.mark.parametrize("key", [("title"), ("content")])
+async def test_document_delete_invalid_id(
+    client: TestClient, mock_get_current_user, active_user: User
+):
+    # Given
+    document_uuid = uuid.uuid4()
+
+    # When
+    response = client.delete(url=f"/documents/{document_uuid}/")
+    json_response = response.json()
+
+    # Then
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert json_response["detail"] == f"Document {document_uuid} not found"
+
+
+@pytest.mark.parametrize(
+    "key, value, desired_response",
+    [
+        ("title", "new_value", "new_value"),
+        ("content", ["test", "test"], json.dumps(["test", "test"])),
+    ],
+)
 async def test_patch_document(
     client: TestClient,
     mock_get_current_user,
     document: Document,
     active_user: User,
-    key,
+    key: str,
+    value: str,
+    desired_response: str,
 ):
     # Given
-    new_value = "new_value"
-    request_data = DocumentPayload(key=new_value)
+    request_data = {key: value}
 
     # When
-    response = client.patch(url=f"/documents/{document.id}/", json=request_data.dict())
+    response = client.patch(url=f"/documents/{document.id}/", json=request_data)
     json_response = response.json()
 
     # Then
     assert response.status_code == status.HTTP_200_OK
-    assert json_response["title"] == new_value
+    assert json_response[key] == desired_response
+
+
+async def test_patch_document_invalid_uuid(
+    client: TestClient,
+    mock_get_current_user,
+    document: Document,
+    active_user: User,
+):
+    # Given
+    request_data = DocumentUpdatePayload(title="new_value")
+    document_uuid = uuid.uuid4()
+
+    # When
+    response = client.patch(
+        url=f"/documents/{document_uuid}/", json=request_data.dict()
+    )
+
+    # Then
+    assert response.status_code == status.HTTP_404_NOT_FOUND

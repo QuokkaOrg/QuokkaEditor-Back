@@ -3,11 +3,10 @@ import json
 from typing import Annotated, Any
 from uuid import UUID
 
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Security
 from fastapi.security import HTTPAuthorizationCredentials
+from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.tortoise import paginate
-from fastapi_pagination import add_pagination, Page
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from tortoise.expressions import Q
@@ -16,7 +15,10 @@ from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document, DocumentTemplate
 from quokka_editor_back.models.user import User
-from quokka_editor_back.schema.document import DocumentPayload, ShareInput
+from quokka_editor_back.schema.document import (
+    DocumentUpdatePayload,
+    ShareInput,
+)
 from quokka_editor_back.schema.utils import Status
 
 router = APIRouter(tags=["documents"])
@@ -122,7 +124,7 @@ async def delete_document(
 )
 async def update_document(
     document_id: UUID,
-    document_payload: DocumentPayload,
+    document_payload: DocumentUpdatePayload,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
     document = await get_document(document_id=document_id)
@@ -134,7 +136,7 @@ async def update_document(
     return document
 
 
-@router.post("/share/{document_id}")
+@router.post("/share/{document_id}", status_code=status.HTTP_201_CREATED)
 async def share_document(
     document_id: UUID,
     payload: ShareInput,
