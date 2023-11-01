@@ -51,7 +51,7 @@ async def active_user() -> User:
         email="test@test.com",
         first_name="tester",
         last_name="test",
-        hashed_password="",
+        hashed_password=auth_handler.encode_password(SecretStr("super_secret_password")),
         is_active=True,
     )
 

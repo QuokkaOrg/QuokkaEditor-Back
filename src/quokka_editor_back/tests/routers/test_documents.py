@@ -167,10 +167,16 @@ async def test_check_create_document(
 
 
 async def test_get_document_details(
-    client: TestClient, mock_get_current_user, document: Document, active_user: User
+    client: TestClient, document: Document, active_user: User, mocker
 ):
+    mock = mocker.AsyncMock(return_value=active_user)
+    mocked_get_current_user = mocker.patch(
+        "quokka_editor_back.routers.documents.get_current_user", mock
+    )
     # When
-    response = client.get(url=f"/documents/{document.id}/")
+    response = client.get(
+        url=f"/documents/{document.id}/", headers={"authorization": "Bearer Fake"}
+    )
     json_response = response.json()
 
     # Then
@@ -178,6 +184,7 @@ async def test_get_document_details(
     assert json_response["title"] == "test_document"
     assert json_response["content"] == '["test"]'
     assert json_response["user_id"] == str(active_user.id)
+    mocked_get_current_user.assert_called_once()
 
 
 async def test_get_document_details_invalid_uuid(
