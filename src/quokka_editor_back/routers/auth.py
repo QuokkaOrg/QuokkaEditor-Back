@@ -32,17 +32,17 @@ async def register(payload: UserCreate):
 async def login(payload: UserLogin):
     user = await User.get_or_none(username=payload.username)
     if user is None:
-        return HTTPException(status_code=401, detail="Invalid username")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username")
     if not auth_handler.verify_password(
         password=payload.password.get_secret_value(),
         encoded_password=user.hashed_password,
     ):
-        return HTTPException(status_code=401, detail="Invalid password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     token = auth_handler.encode_token(user.username)
     return {"token": token}
 
 
 @router.get("/refresh")
-def refresh_token(credentials: HTTPAuthorizationCredentials = Security(security)):
+async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(security)):
     expired_token = credentials.credentials
     return auth_handler.refresh_token(expired_token)
