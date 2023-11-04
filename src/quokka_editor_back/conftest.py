@@ -1,7 +1,8 @@
 import json
+from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from tortoise import Tortoise
@@ -43,6 +44,9 @@ async def initialize_tests(request):
 async def client() -> TestClient:
     return TestClient(app=asgi_app)
 
+@pytest.fixture
+def websocket():
+    return AsyncMock(spec=WebSocket)
 
 @pytest.fixture
 async def active_user() -> User:
