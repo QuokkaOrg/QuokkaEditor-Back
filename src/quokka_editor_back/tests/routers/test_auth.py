@@ -59,10 +59,9 @@ def test_user_already_exist(client: TestClient, active_user: User):
 async def test_login_user(client: TestClient, active_user: User):
     # Given
     user_data = {
-        "username": "test_user",
+        "username": active_user.username,
         "password": "super_secret_password",
     }
-    user = await User.get_or_none(username=user_data["username"])
 
     # When
     response = client.post("auth/login/", json=user_data)
@@ -70,7 +69,7 @@ async def test_login_user(client: TestClient, active_user: User):
 
     # Then
     assert response.status_code == status.HTTP_200_OK
-    assert json_response["token"] == auth_handler.encode_token(user.username)
+    assert json_response["token"] == auth_handler.encode_token(active_user.username)
 
 
 @pytest.mark.parametrize(
