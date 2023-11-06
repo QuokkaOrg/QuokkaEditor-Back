@@ -1,9 +1,8 @@
 import pytest
-from pytest_mock import mocker
 from starlette import status
 from starlette.testclient import TestClient
 
-from quokka_editor_back.auth import auth_handler, optional_security
+from quokka_editor_back.auth import auth_handler
 from quokka_editor_back.models.user import User
 
 
@@ -102,27 +101,14 @@ async def test_login_user_invalid_get_method(client: TestClient):
     assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
 
-@pytest.mark.skip("idk how to mock generate refresh token")
-async def test_refresh_token(client: TestClient, mocker):
-    # TODO idk how to mock generate refresh token
-    # auth_handler.refresh_token
-    # mock = mocker.AsyncMock(return_value={"token": "sample_token"})
-    # mocked_get_return_refresh_token = mocker.patch(
-    #     "quokka_editor_back.auth.authentication.Auth.refresh_token", mock
-    # )
-
-    mock = mocker.AsyncMock()
-    mocked_get_return_refresh_token = mocker.patch(
-        "quokka_editor_back.auth.security", mock
-    )
-
+async def test_refresh_token(client: TestClient, mock_security, auth_token):
     # When
     response = client.get("auth/refresh/")
     json_response = response.json()
 
     # Then
     assert response.status_code == status.HTTP_200_OK
-    mocked_get_return_refresh_token.assert_called_once()
+    assert json_response == auth_handler.refresh_token(auth_token)
 
 
 async def test_refresh_token_invalid_post_method(client: TestClient):
