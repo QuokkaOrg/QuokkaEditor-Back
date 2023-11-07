@@ -32,12 +32,16 @@ async def register(payload: UserCreate):
 async def login(payload: UserLogin):
     user = await User.get_or_none(username=payload.username)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username"
+        )
     if not auth_handler.verify_password(
         password=payload.password.get_secret_value(),
         encoded_password=user.hashed_password,
     ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password"
+        )
     token = auth_handler.encode_token(user.username)
     return {"token": token}
 
