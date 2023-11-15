@@ -157,3 +157,4 @@ media
 
 # ruff
 .ruff_cache
+.vscode
