@@ -30,30 +30,57 @@ async def async_document_task(document_id: str, *args, **kwargs) -> None:
     redis_client: AsyncRedis = await get_redis()
     try:
         document = await get_document(document_id=uuid.UUID(document_id))
-        async for op_data in fetch_operations_from_redis(redis_client, document_id):
-            loaded_op_data = json.loads(op_data)
-            user_token = loaded_op_data["user_token"]
-            async with in_transaction():
-                new_op = await transform_and_prepare_operation(
-                    loaded_op_data["data"], document
-                )
-                if not new_op:
-                    break
-                await apply_and_save_operation(new_op, document)
-
-            await redis_client.publish(
-                f"{str(document_id)}_{user_token}",
-                json.dumps(
-                    {
-                        "data": json.dumps({**new_op.dict(), "user_token": user_token}),
-                        "revision": new_op.revision,
-                    }
-                ),
-            )
+        await process_operations(redis_client, document_id, document)
     except Exception as err:
         logger.warning("THERE  IS AN ERROR %s", err)
     finally:
         await cleanup(redis_client, document_id)
+
+
+async def process_one_operation(
+    loaded_op_data: dict, document: Document
+) -> OperationSchema | None:
+    async with in_transaction():
+        new_op = await transform_and_prepare_operation(
+            loaded_op_data["data"],
+            document,
+        )
+        if not new_op:
+            return
+        await apply_and_save_operation(new_op, document)
+    return new_op
+
+
+async def process_operations(
+    redis_client: AsyncRedis, document_id: str, document: Document
+) -> None:
+    async for op_data in fetch_operations_from_redis(redis_client, document_id):
+        loaded_op_data = json.loads(op_data)
+        user_token = loaded_op_data["user_token"]
+        if new_op := await process_one_operation(loaded_op_data, document):
+            await publish_operation(
+                redis_client,
+                document_id,
+                user_token,
+                new_op,
+            )
+
+
+async def publish_operation(
+    redis_client: AsyncRedis,
+    document_id: str,
+    user_token: str,
+    new_op: OperationSchema,
+) -> None:
+    await redis_client.publish(
+        f"{document_id}_{user_token}",
+        json.dumps(
+            {
+                "data": json.dumps({**new_op.dict(), "user_token": user_token}),
+                "revision": new_op.revision,
+            }
+        ),
+    )
 
 
 async def fetch_operations_from_redis(redis_client: AsyncRedis, document_id: str):
