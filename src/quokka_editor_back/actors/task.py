@@ -12,7 +12,6 @@ from quokka_editor_back.models.document import Document
 from quokka_editor_back.models.operation import (
     Operation,
     OperationSchema,
-    OperationType,
     PosSchema,
 )
 from quokka_editor_back.routers.documents import get_document
@@ -32,7 +31,7 @@ async def async_document_task(document_id: str, *args, **kwargs) -> None:
         document = await get_document(document_id=uuid.UUID(document_id))
         await process_operations(redis_client, document_id, document)
     except Exception as err:
-        logger.warning("THERE  IS AN ERROR %s", err)
+        logger.warning("THERE IS AN ERROR %s", err)
     finally:
         await cleanup(redis_client, document_id)
 
@@ -95,10 +94,6 @@ async def transform_and_prepare_operation(
     op_data: dict, document: Document
 ) -> OperationSchema | None:
     new_op = OperationSchema(**op_data)
-
-    if new_op.type.value not in OperationType.list():
-        logger.error("Invalid operation type")
-        return None  # skip this operation
 
     if new_op.revision < document.last_revision:
         for prev_op in await document.operations.filter(revision__gt=new_op.revision):
