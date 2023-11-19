@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from redis.asyncio import Redis as AsyncRedis
+from redis.client import PubSub
 
 from quokka_editor_back.actors import transform_document
 from quokka_editor_back.auth.utils import authenticate_websocket
@@ -20,13 +21,13 @@ def decode_redis_message(message: dict) -> dict:
     return json.loads(message["data"].decode("utf-8"))
 
 
-async def forward_from_redis_to_websocket(
-    websocket: WebSocket, document_id: UUID, user_token: str
+async def subscribe_channel_and_broadcast_redis_messages(
+    pubsub: PubSub,
+    websocket: WebSocket,
+    document_id: UUID,
+    user_token: str,
+    channel_name: str,
 ):
-    redis_client = await get_redis()
-    channel_name = f"{str(document_id)}_{user_token}"
-
-    pubsub = redis_client.pubsub()
     await pubsub.psubscribe(channel_name)
 
     try:
@@ -43,7 +44,20 @@ async def forward_from_redis_to_websocket(
                 )
     finally:
         await pubsub.unsubscribe(channel_name)
-        await redis_client.close()
+
+
+async def forward_from_redis_to_websocket(
+    websocket: WebSocket, document_id: UUID, user_token: str
+):
+    redis_client = await get_redis()
+    channel_name = f"{str(document_id)}_{user_token}"
+
+    pubsub = redis_client.pubsub()
+    await subscribe_channel_and_broadcast_redis_messages(
+        pubsub, websocket, document_id, user_token, channel_name
+    )
+
+    await redis_client.close()
 
 
 async def process_websocket_message(
@@ -80,6 +94,7 @@ async def process_websocket_message(
 async def websocket_endpoint(
     websocket: WebSocket, document_id: UUID, token: str | None = Query(None)
 ):
+    breakpoint()
     user_id, shared_role = await authenticate_websocket(document_id, token)
     read_only = not (user_id or shared_role == ShareRole.EDIT)
 
@@ -92,16 +107,16 @@ async def websocket_endpoint(
     redis_client = await get_redis()
 
     try:
-        while True:
-            data = await websocket.receive_text()
-            await process_websocket_message(
-                data=data,
-                websocket=websocket,
-                redis_client=redis_client,
-                document_id=document_id,
-                user_token=user_token,
-                read_only=read_only,
-            )
+        # while True:
+        data = await websocket.receive_text()
+        await process_websocket_message(
+            data=data,
+            websocket=websocket,
+            redis_client=redis_client,
+            document_id=document_id,
+            user_token=user_token,
+            read_only=read_only,
+        )
     except WebSocketDisconnect:
         listen_task.cancel()
     finally:
