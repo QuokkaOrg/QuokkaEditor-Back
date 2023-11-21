@@ -80,12 +80,13 @@ async def process_websocket_message(
 async def websocket_endpoint(
     websocket: WebSocket, document_id: UUID, token: str | None = Query(None)
 ):
-    user_id, shared_role = await authenticate_websocket(document_id, token)
-    read_only = not (user_id or shared_role == ShareRole.EDIT)
+    user, shared_role = await authenticate_websocket(document_id, token)
+    user_token = str(user.id) if user else str(id(websocket))
+    username = user.username if user else "Anonymous"
+    read_only = not (user or shared_role == ShareRole.EDIT)
 
-    await manager.connect(websocket, document_id)
+    await manager.connect(websocket, document_id, username, user_token)
 
-    user_token = str(user_id or id(websocket))
     listen_task = asyncio.create_task(
         forward_from_redis_to_websocket(websocket, document_id, user_token)
     )
