@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from enum import StrEnum
 from uuid import UUID
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
@@ -33,12 +34,12 @@ async def forward_from_redis_to_websocket(
         async for message in pubsub.listen():
             if message and message["type"] in ["message", "pmessage"]:
                 logger.debug("Broadcast message %s", message["data"])
-                loaded_message = decode_redis_message(message)
+                decoded_message = decode_redis_message(message)
                 await manager.broadcast(
-                    message=loaded_message["data"],
+                    message=decoded_message,
                     websocket=websocket,
                     document_id=document_id,
-                    revision=loaded_message["revision"],
+                    revision=decoded_message["revision"],
                     user_token=user_token,
                 )
     finally:
@@ -106,7 +107,7 @@ async def websocket_endpoint(
     except WebSocketDisconnect:
         listen_task.cancel()
     finally:
-        manager.disconnect(websocket, document_id)
+        await manager.disconnect(websocket, document_id)
         await manager.broadcast(
             message=json.dumps(
                 {

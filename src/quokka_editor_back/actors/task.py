@@ -16,6 +16,7 @@ from quokka_editor_back.models.operation import (
     PosSchema,
 )
 from quokka_editor_back.routers.documents import get_document
+from quokka_editor_back.schema.websocket import MessageTypeEnum
 from quokka_editor_back.utils.ot import apply_operation, transform
 from quokka_editor_back.utils.redis import get_redis
 
@@ -76,7 +77,9 @@ async def publish_operation(
         f"{document_id}_{user_token}",
         json.dumps(
             {
-                "data": json.dumps({**new_op.dict(), "user_token": user_token}),
+                "data": new_op.dict(),
+                "type": MessageTypeEnum.EXT_CHANGE,
+                "user_token": user_token,
                 "revision": new_op.revision,
             }
         ),

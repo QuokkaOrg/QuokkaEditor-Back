@@ -25,7 +25,7 @@ async def test_websocket_manager_disconnect(websocket: WebSocket):
 
     # When
     await manager.connect(websocket, document_id)
-    manager.disconnect(websocket, document_id)
+    await manager.disconnect(websocket, document_id)
 
     # Then
     assert document_id in manager.active_connections
