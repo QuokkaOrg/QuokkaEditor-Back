@@ -46,7 +46,7 @@ async def read_all(
     current_user: Annotated[User, Depends(get_current_user)],
     search_phrase: str | None = Query(None),
 ):
-    qs = Document.all()
+    qs = Document.filter(user=current_user)
     if search_phrase:
         qs = qs.filter(Q(title__icontains=search_phrase))
 

@@ -11,6 +11,7 @@ from quokka_editor_back.routers import (
     documents,
     users,
     websockets,
+    # projects,
 )
 from quokka_editor_back.settings import TORTOISE_ORM
 
@@ -43,10 +44,11 @@ app.include_router(router=documents.router, prefix="/documents")
 app.include_router(router=document_templates.router, prefix="/templates")
 app.include_router(router=auth.router, prefix="/auth")
 app.include_router(router=users.router, prefix="/users")
+# app.include_router(router=projects.router, prefix="/projects")
 
-register_tortoise(
-    app,
-    config=TORTOISE_ORM,
-    generate_schemas=True,
-    add_exception_handlers=True,
-)
+# register_tortoise(
+#     app,
+#     config=TORTOISE_ORM,
+#     generate_schemas=True,
+#     add_exception_handlers=True,
+# )

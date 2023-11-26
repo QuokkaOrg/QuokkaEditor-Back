@@ -14,7 +14,7 @@ class ShareRole(StrEnum):
 
 class Document(models.Model):
     id = fields.UUIDField(pk=True)
-    title = fields.CharField(max_length=250)
+    title = fields.CharField(max_length=252)
     content = fields.BinaryField(null=True)
 
     user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
@@ -27,6 +27,7 @@ class Document(models.Model):
         related_name="operations",
         on_delete=fields.SET_NULL,
         through="document_operation",
+        null=True,
     )
     last_revision = fields.BigIntField(default=0)
     shared_role = fields.CharEnumField(ShareRole, default=ShareRole.READ)
