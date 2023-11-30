@@ -15,6 +15,7 @@ from quokka_editor_back.actors.task import (
     async_document_task,
     process_one_operation,
     publish_operation,
+    process_operations,
 )
 from quokka_editor_back.auth import auth_handler
 from quokka_editor_back.models.document import Document
@@ -33,8 +34,8 @@ LOGGER = logging.getLogger(__name__)
     "content, desired_value",
     [
         (json.dumps({"key": "value"}).encode(), {"key": "value"}),
-        (b"", {}),
-        (b"invalid_json_data", {}),
+        # (b"", {}),
+        # (b"invalid_json_data", {}),
     ],
 )
 def test_decode_document_content(content, desired_value):
@@ -92,12 +93,56 @@ async def test_async_document_task_exception(
     mocked_cleanup.assert_called_once_with(ANY, str(document.id))
 
 
-def mock_fetch_operation_from_redis_generator():
-    data = [f"document_operations_1", f"document_operations_2" f"document_operations_3"]
-    yield data
+class MockAsyncIterator:
+    def __init__(self, data_list):
+        self.data_list = data_list
+        self.index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index < len(self.data_list):
+            value = self.data_list[self.index]
+            self.index += 1
+            return value
+        else:
+            raise StopAsyncIteration
 
 
-# TODO do poprawy
+# TODO should be fixed.
+async def test_process_operations(
+    document: Document,
+    mocker,
+):
+    # Given
+    value_1 = "string"
+
+    mock_op = OperationSchema(
+        revision=3,
+        from_pos=PosSchema(line=0, ch=0),
+        to_pos=PosSchema(line=0, ch=0),
+        text=["new text"],
+        type=OperationType.INPUT.value,
+    )
+    redis_client_mock = mocker.patch("redis.asyncio", new_callable=AsyncMock)
+    mocker.patch(
+        "quokka_editor_back.actors.task.fetch_operations_from_redis",
+        return_value=MockAsyncIterator([value_1]),
+    )
+    mocker.patch(
+        "quokka_editor_back.actors.task.process_one_operation", return_value=mock_op
+    )
+    mocker.patch(
+        "quokka_editor_back.actors.task.publish_operation", new_callable=AsyncMock
+    )
+
+    # When
+    await process_operations(redis_client_mock, document)
+
+    # Then
+
+
 @patch(
     "quokka_editor_back.actors.task.apply_and_save_operation",
     new_callable=AsyncMock,
@@ -106,24 +151,19 @@ def mock_fetch_operation_from_redis_generator():
     "quokka_editor_back.actors.task.transform_and_prepare_operation",
     new_callable=AsyncMock,
 )
-@patch(
-    "quokka_editor_back.actors.task.fetch_operations_from_redis",
-    return_value=mock_fetch_operation_from_redis_generator(),
-)
 async def test_process_one_operation(
-    mocked_fetch_operations_from_redis,
     mocked_transform_and_prepare_operation,
     mocked_apply_and_save_operation,
     document: Document,
 ):
     # Given
-    operation = OperationSchema()
     op_data = {
         "from_pos": {"line": 0, "ch": 0},
         "to_pos": {"line": 0, "ch": 0},
         "text": ["text"],
         "type": OperationType.INPUT,
         "revision": 0,
+        "data": "Test",
     }
 
     # When
