@@ -173,7 +173,7 @@ async def test_process_websocket_message_read_only(
     mock_redis.set.assert_not_called()
 
 
-@pytest.mark.skip("Invalid test")
+@pytest.mark.skip("Testing the websocket connection will be fixed later")
 @patch("quokka_editor_back.routers.websockets.get_redis", new_callable=AsyncMock)
 @patch(
     "quokka_editor_back.routers.websockets.process_websocket_message",
@@ -224,7 +224,7 @@ async def test_websocket_properly_connect_and_disconnect(
         mocked_manager.disconnect.assert_called_once_with(websocket, document.id)
 
 
-@pytest.mark.skip("Invalid test")
+@pytest.mark.skip("Testing the websocket connection will be fixed later")
 @patch("quokka_editor_back.actors.transform_document", new_callable=AsyncMock)
 @patch("quokka_editor_back.routers.websockets.get_redis", new_callable=AsyncMock)
 @patch(
@@ -255,7 +255,7 @@ async def test_websocket_with_disconnect_error(
         mocked_manager.disconnect.assert_called_once_with(mocker.Mock(), document.id)
 
 
-@pytest.mark.skip("Invalid test")
+@pytest.mark.skip("Testing the websocket connection will be fixed later")
 async def test_websocket_authentication(
     client: TestClient, websocket, active_user: UserLogin, document: Document, mocker
 ):
@@ -272,7 +272,7 @@ async def test_websocket_authentication(
         mock_authenticate_websocket.assert_called_once_with(document.id, token)
 
 
-@pytest.mark.skip("Invalid test")
+@pytest.mark.skip("Testing the websocket connection will be fixed later")
 async def test_websocket_communication(
     client: TestClient, active_user: UserLogin, document: Document, mocker
 ):
