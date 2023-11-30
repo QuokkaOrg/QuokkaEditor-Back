@@ -94,7 +94,6 @@ async def process_websocket_message(
 async def websocket_endpoint(
     websocket: WebSocket, document_id: UUID, token: str | None = Query(None)
 ):
-    breakpoint()
     user_id, shared_role = await authenticate_websocket(document_id, token)
     read_only = not (user_id or shared_role == ShareRole.EDIT)
 
@@ -107,16 +106,16 @@ async def websocket_endpoint(
     redis_client = await get_redis()
 
     try:
-        # while True:
-        data = await websocket.receive_text()
-        await process_websocket_message(
-            data=data,
-            websocket=websocket,
-            redis_client=redis_client,
-            document_id=document_id,
-            user_token=user_token,
-            read_only=read_only,
-        )
+        while True:
+            data = await websocket.receive_text()
+            await process_websocket_message(
+                data=data,
+                websocket=websocket,
+                redis_client=redis_client,
+                document_id=document_id,
+                user_token=user_token,
+                read_only=read_only,
+            )
     except WebSocketDisconnect:
         listen_task.cancel()
     finally:
