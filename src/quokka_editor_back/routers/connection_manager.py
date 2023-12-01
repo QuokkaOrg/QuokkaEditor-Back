@@ -1,10 +1,9 @@
-import json
 import random
 from collections import defaultdict
 from uuid import UUID
 
-from fastapi import WebSocket
 from asgiref.sync import sync_to_async
+from fastapi import WebSocket
 
 from quokka_editor_back.schema.websocket import MessageTypeEnum
 
@@ -14,7 +13,7 @@ def rand_hex_color():
     g = random.randint(180, 255)
     b = random.randint(180, 255)
 
-    hex_color = "#{:02X}{:02X}{:02X}".format(r, g, b)
+    hex_color = f"#{r:02X}{g:02X}{b:02X}"
     return hex_color
 
 

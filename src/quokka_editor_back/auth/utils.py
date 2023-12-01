@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from uuid import UUID
 
@@ -8,7 +9,6 @@ from tortoise.exceptions import DoesNotExist
 from quokka_editor_back.auth import auth_handler, security
 from quokka_editor_back.models.document import Document, ShareRole
 from quokka_editor_back.models.user import User
-import contextlib
 
 logger = logging.getLogger(__name__)
 

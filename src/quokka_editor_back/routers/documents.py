@@ -14,8 +14,10 @@ from tortoise.expressions import Q
 from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document, DocumentTemplate
+from quokka_editor_back.models.project import Project
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.document import (
+    DocumentCreatePayload,
     DocumentUpdatePayload,
     ShareInput,
 )
@@ -56,26 +58,37 @@ async def read_all(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_document(
     current_user: Annotated[User, Depends(get_current_user)],
-    template_id: UUID | None = None,
+    document_payload: DocumentCreatePayload,
 ):
     title = "Draft Document"
     content = json.dumps([""]).encode()
 
-    if template_id:
+    if document_payload.template_id:
         try:
-            document_template = await DocumentTemplate.get(id=template_id)
+            document_template = await DocumentTemplate.get(
+                id=document_payload.template_id
+            )
         except DoesNotExist as err:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Document Template {template_id} not found",
+                detail=f"Document Template {document_payload.template_id} not found",
             ) from err
         title = document_template.title
         content = document_template.content
+
+    try:
+        project = await Project.get(id=document_payload.project_id)
+    except DoesNotExist as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project {document_payload.project_id} not found",
+        ) from err
 
     new_document = await Document.create(
         title=title,
         user_id=current_user.id,
         content=content,
+        project=project,
     )
     return new_document
 

@@ -3,6 +3,7 @@ from enum import StrEnum
 from tortoise import fields, models
 
 from quokka_editor_back.models.operation import Operation
+from quokka_editor_back.models.project import Project
 from quokka_editor_back.models.user import User
 
 
@@ -28,6 +29,11 @@ class Document(models.Model):
         on_delete=fields.SET_NULL,
         through="document_operation",
         null=True,
+    )
+    project: fields.ForeignKeyRelation[Project] = fields.ForeignKeyField(
+        model_name="quokka_editor_back.Project",
+        related_name="documents",
+        on_delete=fields.CASCADE,
     )
     last_revision = fields.BigIntField(default=0)
     shared_role = fields.CharEnumField(ShareRole, default=ShareRole.READ)

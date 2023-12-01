@@ -1,11 +1,13 @@
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 from quokka_editor_back.models.document import ShareRole
 
 
 class DocumentCreatePayload(BaseModel):
-    title: str = Field(..., max_length=250)
-    content: list[str]
+    template_id: UUID | None = None
+    project_id: UUID
 
 
 class DocumentUpdatePayload(BaseModel):

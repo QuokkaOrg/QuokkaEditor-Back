@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-from enum import StrEnum
 from uuid import UUID
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
