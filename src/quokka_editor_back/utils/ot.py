@@ -23,6 +23,7 @@ def adjust_position(
             line=new_pos.line,
             ch=new_pos.ch + len(prev_text),
         )
+    # There is no chance to achieve this
     return PosSchema(line=new_pos.line + 1, ch=new_pos.ch)
 
 
@@ -70,16 +71,9 @@ def transform(new_op: OperationSchema, prev_op: OperationSchema) -> OperationSch
         )
 
     if new_op.type == OperationType.DELETE and prev_op.type == OperationType.DELETE:
-        if new_op.from_pos.line <= prev_op.from_pos.line:
-            return new_op
-        return OperationSchema(
-            from_pos=PosSchema(line=new_op.from_pos.line, ch=new_op.from_pos.ch),
-            to_pos=new_op.to_pos,
-            text=new_op.text,
-            type=OperationType.DELETE,
-            revision=new_op.revision,
-        )
+        return new_op
 
+    # The pydantic will not allow to pass invalid operation type
     raise Exception("Invalid operations")
 
 
