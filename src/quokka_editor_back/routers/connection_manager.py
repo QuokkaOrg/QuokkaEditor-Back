@@ -48,7 +48,6 @@ class ConnectionManager:
         await self.send_all_users_info(websocket, document_id)
         await self.broadcast_new_user(username, user_token, document_id, websocket)
 
-    @staticmethod
     @sync_to_async()
     def disconnect(self, websocket: WebSocket, document_id: UUID):
         del self.active_connections[document_id][websocket]

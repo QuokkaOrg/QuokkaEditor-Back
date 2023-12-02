@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 async def get_user_by_token(token: str):
     username = auth_handler.decode_token(token=token)
-    logger.warning("AAaaaaaaaaa: %s", username)
 
     try:
         user = await User.get(username=username)

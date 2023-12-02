@@ -15,7 +15,7 @@ class ShareRole(StrEnum):
 
 class Document(models.Model):
     id = fields.UUIDField(pk=True)
-    title = fields.CharField(max_length=252)
+    title = fields.CharField(max_length=255)
     content = fields.BinaryField(null=True)
 
     user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
@@ -42,5 +42,5 @@ class Document(models.Model):
 
 class DocumentTemplate(models.Model):
     id = fields.UUIDField(pk=True)
-    title = fields.CharField(max_length=250)
+    title = fields.CharField(max_length=255)
     content = fields.BinaryField(null=True)

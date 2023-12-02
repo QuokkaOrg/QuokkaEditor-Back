@@ -11,7 +11,7 @@ class DocumentCreatePayload(BaseModel):
 
 
 class DocumentUpdatePayload(BaseModel):
-    title: str | None = Field(None, max_length=250)
+    title: str | None = Field(None, max_length=255)
     content: list[str] | None = Field(None)
 
 

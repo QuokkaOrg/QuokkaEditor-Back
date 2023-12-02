@@ -5,7 +5,7 @@ from quokka_editor_back.models.user import User
 
 class Project(models.Model):
     id = fields.UUIDField(pk=True)
-    title = fields.CharField(max_length=250)
+    title = fields.CharField(max_length=255)
 
     user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
         model_name="quokka_editor_back.User",
