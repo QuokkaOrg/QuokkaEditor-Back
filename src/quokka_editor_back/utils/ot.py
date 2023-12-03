@@ -73,9 +73,6 @@ def transform(new_op: OperationSchema, prev_op: OperationSchema) -> OperationSch
     if new_op.type == OperationType.DELETE and prev_op.type == OperationType.DELETE:
         return new_op
 
-    # The pydantic will not allow to pass invalid operation type
-    raise Exception("Invalid operations")
-
 
 def apply_operation(document_content: list[str], op: OperationSchema) -> list[str]:
     start_line, start_ch = op.from_pos.line, op.from_pos.ch
@@ -94,7 +91,5 @@ def apply_operation(document_content: list[str], op: OperationSchema) -> list[st
             combined = [before + middle[0] + after]
     elif op.type == OperationType.DELETE:
         combined = [before + middle[0] + after]
-    else:
-        raise Exception("Invalid Operation!!!!")
     document_content[start_line : end_line + 1] = combined
     return document_content
