@@ -12,4 +12,4 @@ class Project(models.Model):
         related_name="projects",
         on_delete=fields.CASCADE,
     )
-    images = fields.TextField(null=True)
+    images = fields.JSONField(null=True)

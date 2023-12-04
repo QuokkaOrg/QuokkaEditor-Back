@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from tortoise.contrib.fastapi import register_tortoise
 
@@ -45,6 +46,9 @@ app.include_router(router=document_templates.router, prefix="/templates")
 app.include_router(router=auth.router, prefix="/auth")
 app.include_router(router=users.router, prefix="/users")
 app.include_router(router=projects.router, prefix="/projects")
+app.mount(
+    "/statics", StaticFiles(directory="src/quokka_editor_back/statics"), name="statics"
+)
 
 register_tortoise(
     app,

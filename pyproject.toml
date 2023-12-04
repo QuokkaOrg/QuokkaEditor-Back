@@ -71,7 +71,7 @@ select = [
 exclude = ["src/quokka_editor_back/models/migrations/quokka_editor_back/*"]
 
 [tool.ruff.flake8-bugbear]
-extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "fastapi.Security", "fastapi.params.Security"]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "fastapi.Security", "fastapi.params.Security", "fastapi.File"]
 
 [build-system]
 requires = ["poetry-core"]
