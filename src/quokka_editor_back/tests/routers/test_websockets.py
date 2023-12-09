@@ -27,7 +27,6 @@ async def test_decode_redis_message():
     assert result == {"key": "value"}
 
 
-# TODO add test for subscribe_channel_and_broadcast_redis_messages
 class AsyncIterator:
     def __init__(self, items):
         self.items = items
@@ -286,7 +285,6 @@ async def test_websocket_communication(
     # When
     with client.websocket_connect(f"/ws/{document.id}?token={token}") as websocket:
         # Then
-        # mock_websocket.receive_text.assert_called_once_with()
         mocked_manager_broadcast.assert_called_once_with(
             message=json.dumps(
                 {

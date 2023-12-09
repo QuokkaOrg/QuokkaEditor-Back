@@ -21,6 +21,7 @@ def decode_redis_message(message: dict) -> dict:
     return json.loads(message["data"].decode("utf-8"))
 
 
+# TODO add test for subscribe_channel_and_broadcast_redis_messages
 async def subscribe_channel_and_broadcast_redis_messages(
     pubsub: PubSub,
     websocket: WebSocket,
