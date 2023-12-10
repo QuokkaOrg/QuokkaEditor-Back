@@ -1,29 +1,29 @@
 import json
-import uuid
 import logging
-from unittest.mock import AsyncMock, Mock, patch, ANY
+import uuid
+from unittest.mock import ANY, AsyncMock, Mock, patch
 
 import pytest
 import tortoise
 
 from quokka_editor_back.actors.task import (
-    fetch_operations_from_redis,
-    decode_document_content,
-    cleanup,
     apply_and_save_operation,
-    transform_and_prepare_operation,
     async_document_task,
+    cleanup,
+    decode_document_content,
+    fetch_operations_from_redis,
     process_one_operation,
-    publish_operation,
     process_operations,
+    publish_operation,
+    transform_and_prepare_operation,
 )
 from quokka_editor_back.auth import auth_handler
 from quokka_editor_back.models.document import Document
 from quokka_editor_back.models.operation import (
-    OperationSchema,
-    PosSchema,
-    OperationType,
     Operation,
+    OperationSchema,
+    OperationType,
+    PosSchema,
 )
 from quokka_editor_back.models.user import User
 
@@ -124,7 +124,8 @@ async def test_process_operations(
     mocker,
 ):
     # Given
-    value_1 = "string"
+    user_token = "<PASSWORD>"
+    value_1 = '{"data": "test data", "user_token": "<PASSWORD>"}'
 
     mock_op = OperationSchema(
         revision=3,
@@ -138,10 +139,10 @@ async def test_process_operations(
         "quokka_editor_back.actors.task.fetch_operations_from_redis",
         return_value=MockAsyncIterator([value_1]),
     )
-    mocker.patch(
+    mock_process_one_operation = mocker.patch(
         "quokka_editor_back.actors.task.process_one_operation", return_value=mock_op
     )
-    mocker.patch(
+    mock_publish_operation = mocker.patch(
         "quokka_editor_back.actors.task.publish_operation", new_callable=AsyncMock
     )
 
@@ -149,6 +150,13 @@ async def test_process_operations(
     await process_operations(redis_client_mock, document)
 
     # Then
+    mock_process_one_operation.assert_called_once_with(json.loads(value_1), document)
+    mock_publish_operation.assert_called_once_with(
+        redis_client_mock,
+        document.id,
+        user_token,
+        ANY,
+    )
 
 
 @patch(
