@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def decode_document_content(document):
-    # TODO The `b""` value will raise an error.
-    return json.loads((document.content or b"").decode())
+    return json.loads((document.content or b"{}").decode())
 
 
 async def async_document_task(document_id: str, *args, **kwargs) -> None:
@@ -56,7 +55,6 @@ async def process_operations(redis_client: AsyncRedis, document: Document) -> No
         loaded_op_data = json.loads(op_data)
         user_token = loaded_op_data["user_token"]
         if new_op := await process_one_operation(loaded_op_data, document):
-            breakpoint()
             await publish_operation(
                 redis_client,
                 document.id,

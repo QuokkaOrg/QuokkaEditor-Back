@@ -34,8 +34,7 @@ LOGGER = logging.getLogger(__name__)
     "content, desired_value",
     [
         (json.dumps({"key": "value"}).encode(), {"key": "value"}),
-        # (b"", {}),
-        # (b"invalid_json_data", {}),
+        (b"", {}),
     ],
 )
 def test_decode_document_content(content, desired_value):
@@ -47,6 +46,15 @@ def test_decode_document_content(content, desired_value):
 
     # Then
     assert decoded_content == desired_value
+
+
+def test_decode_document_content_with_invalid_json():
+    # Given
+    document = Mock(content=b"invalid_data_here")
+
+    # When
+    with pytest.raises(json.JSONDecodeError):
+        decode_document_content(document)
 
 
 @patch("quokka_editor_back.actors.task.process_operations", new_callable=AsyncMock)
