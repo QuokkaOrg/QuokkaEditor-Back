@@ -5,7 +5,7 @@ from quokka_editor_back.models.operation import (
     OperationType,
     PosSchema,
 )
-from quokka_editor_back.utils.ot import adjust_position, transform, apply_operation
+from quokka_editor_back.utils.ot import adjust_position, apply_operation, transform
 
 
 @pytest.mark.parametrize(
@@ -288,7 +288,7 @@ def test_apply_operation_input(sample_document_content, operation_type):
     # Given
     op = OperationSchema(
         from_pos=PosSchema(ch=3, line=0),
-        to_pos=PosSchema(ch=5, line=0),
+        to_pos=PosSchema(ch=3, line=0),
         text=["XYZ"],
         type=operation_type,
         revision=1,
@@ -301,12 +301,34 @@ def test_apply_operation_input(sample_document_content, operation_type):
     assert result == ["abcXYZ def", "ghi jkl", "mno pqr"]
 
 
+@pytest.mark.parametrize("operation_type", [
+    OperationType.INPUT,
+    OperationType.PASTE,
+    OperationType.UNDO
+])
+def test_apply_operation_input_1(sample_document_content, operation_type):
+    # Given
+    op = OperationSchema(
+        from_pos=PosSchema(ch=3, line=0),
+        to_pos=PosSchema(ch=6, line=0),
+        text=["XYZ"],
+        type=operation_type,
+        revision=1,
+    )
+
+    # When
+    result = apply_operation(sample_document_content.copy(), op)
+
+    # Then
+    assert result == ["abcXYZf", "ghi jkl", "mno pqr"]
+
+
 def test_apply_operation_delete(sample_document_content):
     # Given
     op = OperationSchema(
         from_pos=PosSchema(ch=0, line=0),
         to_pos=PosSchema(ch=3, line=0),
-        text=["abc"],
+        text=[""],
         type=OperationType.DELETE,
         revision=1,
     )
