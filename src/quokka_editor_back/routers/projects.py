@@ -1,20 +1,22 @@
+import json
 import os
 import uuid
-from http.client import HTTPException
 from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.tortoise import paginate
 from starlette import status
 from tortoise.exceptions import DoesNotExist
+from tortoise.transactions import in_transaction
 
+from quokka_editor_back.models.document import Document
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.project import Project
 from quokka_editor_back.models.user import User
-from quokka_editor_back.schema.project import ProjectUpdatePayload
+from quokka_editor_back.schema.project import ProjectUpdatePayload, ProjectCreatePayload
 
 router = APIRouter(tags=["projects"])
 
@@ -60,14 +62,23 @@ async def read_all(
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_project(
+    project_payload: ProjectCreatePayload,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    title = "Draft Project"
+    document_title = "main"
 
-    new_project = await Project.create(
-        title=title,
-        user_id=current_user.id,
-    )
+    async with in_transaction():
+        new_project = await Project.create(
+            title=project_payload.title,
+            user_id=current_user.id,
+        )
+        await Document.create(
+            title=document_title,
+            content=json.dumps([""]).encode(),
+            user=current_user,
+            project=new_project,
+        )
+
     return new_project
 
 
@@ -76,7 +87,10 @@ async def read_project(
     project_id: UUID,
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return await get_project(project_id=project_id, user=current_user)
+    return {
+        "project": await get_project(project_id=project_id, user=current_user),
+        "documents": await Document.filter(project__id=project_id, user=current_user),
+    }
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
