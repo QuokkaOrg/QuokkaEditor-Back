@@ -7,7 +7,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 from tortoise.exceptions import DoesNotExist
 
 from quokka_editor_back.auth import auth_handler, security
-from quokka_editor_back.models.document import Document, ShareRole
+from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.project import ShareRole
 from quokka_editor_back.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,6 @@ async def authenticate_websocket(
             user = await get_user_by_token(token=token)
     if user:
         return user, None
-    if document.shared_by_link:
-        return None, document.shared_role
+    if document.project.shared_by_link:
+        return None, document.project.shared_role
     raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)

@@ -8,7 +8,7 @@ from redis.asyncio import Redis as AsyncRedis
 
 from quokka_editor_back.actors import transform_document
 from quokka_editor_back.auth.utils import authenticate_websocket
-from quokka_editor_back.models.document import ShareRole
+from quokka_editor_back.models.project import ShareRole
 from quokka_editor_back.routers import manager
 from quokka_editor_back.utils.redis import get_redis
 

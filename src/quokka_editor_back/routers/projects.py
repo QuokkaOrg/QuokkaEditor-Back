@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import uuid
@@ -5,18 +6,25 @@ from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.tortoise import paginate
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from tortoise.transactions import in_transaction
 
-from quokka_editor_back.models.document import Document
+from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
+from quokka_editor_back.models.document import Document
 from quokka_editor_back.models.project import Project
 from quokka_editor_back.models.user import User
-from quokka_editor_back.schema.project import ProjectUpdatePayload, ProjectCreatePayload
+from quokka_editor_back.schema.project import (
+    ProjectCreatePayload,
+    ProjectUpdatePayload,
+    ShareInput,
+)
+from quokka_editor_back.schema.utils import Status
 
 router = APIRouter(tags=["projects"])
 
@@ -31,7 +39,7 @@ def delete_file(file_name: str):
     except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Not found",
+            detail="Not found",
         ) from err
 
 
@@ -82,13 +90,33 @@ async def create_project(
     return new_project
 
 
+def has_access(project: Project, current_user: User | None):
+    if project.shared_by_link:
+        return True
+    if current_user and project.user == current_user:
+        return True
+    return False
+
+
 @router.get("/{project_id}")
 async def read_project(
     project_id: UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
+    credentials: HTTPAuthorizationCredentials = Security(optional_security),
 ):
+    project = await get_project(project_id=project_id)
+    current_user = None
+
+    if credentials:
+        with contextlib.suppress(HTTPException):
+            current_user = await get_current_user(credentials)
+
+    if not has_access(project, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project {project_id} not found",
+        )
     return {
-        "project": await get_project(project_id=project_id, user=current_user),
+        "project": project,
         "documents": await Document.filter(project__id=project_id, user=current_user),
     }
 
@@ -172,6 +200,18 @@ async def delete_image(
         raise HTTPException(status_code=404, detail="Image URL not found in project")
 
     return {"message": "Image deleted successfully"}
+
+
+@router.post("/share/{project_id}", status_code=status.HTTP_201_CREATED)
+async def share_document(
+    project_id: UUID,
+    payload: ShareInput,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    project = await get_project(project_id=project_id)
+    project.update_from_dict(payload.dict())
+    await project.save()
+    return Status(message=f"Shared project {project_id}")
 
 
 add_pagination(router)
