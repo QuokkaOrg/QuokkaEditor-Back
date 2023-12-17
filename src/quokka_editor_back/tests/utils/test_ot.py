@@ -239,7 +239,6 @@ def test_new_op_delete(prev_op_type):
     result = transform(new_op, prev_op)
 
     # Then
-    # Need explanation
     assert result == OperationSchema(
         from_pos=PosSchema(ch=8, line=0),
         to_pos=new_op.to_pos,

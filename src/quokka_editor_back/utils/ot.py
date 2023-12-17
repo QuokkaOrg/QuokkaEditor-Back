@@ -18,13 +18,10 @@ def adjust_position(
         or (new_pos.line > prev_pos.line)
     ):
         return new_pos
-    if new_pos.line == prev_pos.line:
-        return PosSchema(
-            line=new_pos.line,
-            ch=new_pos.ch + len(prev_text),
-        )
-    # There is no chance to achieve this
-    return PosSchema(line=new_pos.line + 1, ch=new_pos.ch)
+    return PosSchema(
+        line=new_pos.line,
+        ch=new_pos.ch + len(prev_text),
+    )
 
 
 def transform(new_op: OperationSchema, prev_op: OperationSchema) -> OperationSchema:
