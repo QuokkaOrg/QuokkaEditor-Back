@@ -118,7 +118,6 @@ class MockAsyncIterator:
             raise StopAsyncIteration
 
 
-# TODO should be fixed.
 async def test_process_operations(
     document: Document,
     mocker,
