@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Security, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.tortoise import paginate
@@ -65,7 +65,7 @@ async def read_all(
     current_user: Annotated[User, Depends(get_current_user)],
     search_phrase: str | None = Query(None),
 ):
-    qs = Document.filter(user=current_user)
+    qs = Project.filter(user=current_user)
     if search_phrase:
         qs = qs.filter(Q(title__icontains=search_phrase))
 

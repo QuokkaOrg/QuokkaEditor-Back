@@ -127,7 +127,7 @@ async def test_check_create_document(
 
 
 async def test_get_document_details1(
-    client: TestClient, mock_get_current_user, document: Document, active_user: User, mocker
+    client: TestClient, mock_get_current_user, document: Document, active_user: User
 ):
     # When
     response = client.get(

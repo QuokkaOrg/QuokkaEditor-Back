@@ -6,7 +6,8 @@ from starlette.testclient import TestClient
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from quokka_editor_back.auth import auth_handler
-from quokka_editor_back.models.document import Document, ShareRole
+from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.project import ShareRole
 from quokka_editor_back.routers import manager
 from quokka_editor_back.routers.websockets import (
     decode_redis_message,
