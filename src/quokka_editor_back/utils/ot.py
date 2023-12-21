@@ -18,12 +18,10 @@ def adjust_position(
         or (new_pos.line > prev_pos.line)
     ):
         return new_pos
-    if new_pos.line == prev_pos.line:
-        return PosSchema(
-            line=new_pos.line,
-            ch=new_pos.ch + len(prev_text),
-        )
-    return PosSchema(line=new_pos.line + 1, ch=new_pos.ch)
+    return PosSchema(
+        line=new_pos.line,
+        ch=new_pos.ch + len(prev_text),
+    )
 
 
 def transform(new_op: OperationSchema, prev_op: OperationSchema) -> OperationSchema:
@@ -70,17 +68,7 @@ def transform(new_op: OperationSchema, prev_op: OperationSchema) -> OperationSch
         )
 
     if new_op.type == OperationType.DELETE and prev_op.type == OperationType.DELETE:
-        if new_op.from_pos.line <= prev_op.from_pos.line:
-            return new_op
-        return OperationSchema(
-            from_pos=PosSchema(line=new_op.from_pos.line, ch=new_op.from_pos.ch),
-            to_pos=new_op.to_pos,
-            text=new_op.text,
-            type=OperationType.DELETE,
-            revision=new_op.revision,
-        )
-
-    raise Exception("Invalid operations")
+        return new_op
 
 
 def apply_operation(document_content: list[str], op: OperationSchema) -> list[str]:
@@ -100,7 +88,5 @@ def apply_operation(document_content: list[str], op: OperationSchema) -> list[st
             combined = [before + middle[0] + after]
     elif op.type == OperationType.DELETE:
         combined = [before + middle[0] + after]
-    else:
-        raise Exception("Invalid Operation!!!!")
     document_content[start_line : end_line + 1] = combined
     return document_content
