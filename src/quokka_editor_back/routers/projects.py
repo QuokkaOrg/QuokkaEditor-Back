@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Security, UploadFile, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.tortoise import paginate
 from starlette import status
 from tortoise.exceptions import DoesNotExist
+from tortoise.expressions import Q
 from tortoise.transactions import in_transaction
 
 from quokka_editor_back.auth import optional_security
@@ -62,8 +63,11 @@ async def get_project(
 @router.get("/", response_model=Page)
 async def read_all(
     current_user: Annotated[User, Depends(get_current_user)],
+    search_phrase: str | None = Query(None),
 ):
-    qs = Project.filter(user=current_user)
+    qs = Document.filter(user=current_user)
+    if search_phrase:
+        qs = qs.filter(Q(title__icontains=search_phrase))
 
     return await paginate(query=qs.order_by("-id"))
 
