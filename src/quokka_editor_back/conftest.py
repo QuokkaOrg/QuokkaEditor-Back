@@ -14,6 +14,7 @@ from quokka_editor_back.app import app as asgi_app
 from quokka_editor_back.auth import auth_handler, security
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document, DocumentTemplate
+from quokka_editor_back.models.project import Project
 from quokka_editor_back.models.user import User
 from quokka_editor_back.settings import TORTOISE_ORM
 
@@ -66,10 +67,19 @@ async def active_user() -> User:
 
 
 @pytest.fixture
-async def document(active_user: User) -> Document:
+async def document(active_user: User, project: Project) -> Document:
     return await Document.create(
         title="test_document",
         content=json.dumps(["test"]).encode(),
+        user=active_user,
+        project=project
+    )
+
+
+@pytest.fixture
+async def project(active_user: User) -> Project:
+    return await Project.create(
+        title="test_project",
         user=active_user,
     )
 

@@ -9,7 +9,7 @@ from redis.client import PubSub
 
 from quokka_editor_back.actors import transform_document
 from quokka_editor_back.auth.utils import authenticate_websocket
-from quokka_editor_back.models.document import ShareRole
+from quokka_editor_back.models.project import ShareRole
 from quokka_editor_back.routers import manager
 from quokka_editor_back.utils.redis import get_redis
 
@@ -35,12 +35,12 @@ async def subscribe_channel_and_broadcast_redis_messages(
         async for message in pubsub.listen():
             if message and message["type"] in ["message", "pmessage"]:
                 logger.debug("Broadcast message %s", message["data"])
-                loaded_message = decode_redis_message(message)
+                decoded_message = decode_redis_message(message)
                 await manager.broadcast(
-                    message=loaded_message["data"],
+                    message=decoded_message,
                     websocket=websocket,
                     document_id=document_id,
-                    revision=loaded_message["revision"],
+                    revision=decoded_message["revision"],
                     user_token=user_token,
                 )
     finally:
@@ -95,12 +95,13 @@ async def process_websocket_message(
 async def websocket_endpoint(
     websocket: WebSocket, document_id: UUID, token: str | None = Query(None)
 ):
-    user_id, shared_role = await authenticate_websocket(document_id, token)
-    read_only = not (user_id or shared_role == ShareRole.EDIT)
+    user, shared_role = await authenticate_websocket(document_id, token)
+    user_token = str(user.id) if user else str(id(websocket))
+    username = user.username if user else "Anonymous"
+    read_only = not (user or shared_role == ShareRole.EDIT)
 
-    await manager.connect(websocket, document_id)
+    await manager.connect(websocket, document_id, username, user_token)
 
-    user_token = str(user_id or id(websocket))
     listen_task = asyncio.create_task(
         forward_from_redis_to_websocket(websocket, document_id, user_token)
     )
@@ -120,7 +121,7 @@ async def websocket_endpoint(
     except WebSocketDisconnect:
         listen_task.cancel()
     finally:
-        manager.disconnect(websocket, document_id)
+        await manager.disconnect(websocket, document_id)
         await manager.broadcast(
             message=json.dumps(
                 {

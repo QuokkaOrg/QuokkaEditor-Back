@@ -1,25 +1,22 @@
-import contextlib
 import json
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Security
-from fastapi.security import HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.tortoise import paginate
 from starlette import status
 from tortoise.exceptions import DoesNotExist
 from tortoise.expressions import Q
 
-from quokka_editor_back.auth import optional_security
 from quokka_editor_back.auth.utils import get_current_user
 from quokka_editor_back.models.document import Document, DocumentTemplate
+from quokka_editor_back.models.project import Project
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.document import (
+    DocumentCreatePayload,
     DocumentUpdatePayload,
-    ShareInput,
 )
-from quokka_editor_back.schema.utils import Status
 
 router = APIRouter(tags=["documents"])
 
@@ -46,7 +43,7 @@ async def read_all(
     current_user: Annotated[User, Depends(get_current_user)],
     search_phrase: str | None = Query(None),
 ):
-    qs = Document.all()
+    qs = Document.filter(user=current_user)
     if search_phrase:
         qs = qs.filter(Q(title__icontains=search_phrase))
 
@@ -56,57 +53,47 @@ async def read_all(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_document(
     current_user: Annotated[User, Depends(get_current_user)],
-    template_id: UUID | None = None,
+    document_payload: DocumentCreatePayload,
 ):
     title = "Draft Document"
     content = json.dumps([""]).encode()
 
-    if template_id:
+    if document_payload.template_id:
         try:
-            document_template = await DocumentTemplate.get(id=template_id)
+            document_template = await DocumentTemplate.get(
+                id=document_payload.template_id
+            )
         except DoesNotExist as err:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Document Template {template_id} not found",
+                detail=f"Document Template {document_payload.template_id} not found",
             ) from err
         title = document_template.title
         content = document_template.content
+
+    try:
+        project = await Project.get(id=document_payload.project_id)
+    except DoesNotExist as err:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project {document_payload.project_id} not found",
+        ) from err
 
     new_document = await Document.create(
         title=title,
         user_id=current_user.id,
         content=content,
+        project=project,
     )
     return new_document
-
-
-def has_access(document: Document, current_user: User | None):
-    if document.shared_by_link:
-        return True
-    if current_user and document.user == current_user:
-        return True
-    return False
 
 
 @router.get("/{document_id}")
 async def read_document(
     document_id: UUID,
-    credentials: HTTPAuthorizationCredentials = Security(optional_security),
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
-    document = await get_document(document_id=document_id)
-    current_user = None
-
-    if credentials:
-        with contextlib.suppress(HTTPException):
-            current_user = await get_current_user(credentials)
-
-    if not has_access(document, current_user):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document {document_id} not found",
-        )
-
-    return document
+    return await get_document(document_id=document_id, user=current_user)
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -134,18 +121,6 @@ async def update_document(
         document.content = json.dumps(document_payload.content).encode()
     await document.save()
     return document
-
-
-@router.post("/share/{document_id}", status_code=status.HTTP_201_CREATED)
-async def share_document(
-    document_id: UUID,
-    payload: ShareInput,
-    current_user: Annotated[User, Depends(get_current_user)],
-):
-    document = await get_document(document_id=document_id)
-    document.update_from_dict(payload.dict())
-    await document.save()
-    return Status(message=f"Shared document {document_id}")
 
 
 add_pagination(router)

@@ -5,73 +5,58 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from quokka_editor_back.models.document import Document, ShareRole
+from quokka_editor_back.models.document import Document
+from quokka_editor_back.models.project import Project, ShareRole
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.document import (
     DocumentUpdatePayload,
-    ShareInput,
 )
 
 
 async def test_share_document(
     client: TestClient,
-    document,
+    project: Project,
+    document: Document,
     mock_get_current_user,
 ):
     # Given
-    document.shared_by_link = False
-    document.shared_role = ShareRole.COMMENT
-    await document.save()
-    payload = ShareInput(shared_role=ShareRole.EDIT, shared_by_link=True)
+    project.shared_by_link = True
+    project.shared_role = ShareRole.EDIT
+    await project.save()
 
     # When
-    result = client.post(f"documents/share/{document.id}", json=payload.dict())
+    result = client.get(f"documents/{document.id}")
 
     # Then
-    result_json = result.json()
-    assert result.status_code == status.HTTP_201_CREATED
-    assert result_json == {"message": f"Shared document {document.id}"}
-    await document.refresh_from_db()
-    assert document.shared_role == ShareRole.EDIT
-    assert document.shared_by_link
+    json_response = result.json()
+    assert result.status_code == status.HTTP_200_OK
+    assert json_response.get("id") == str(document.id)
 
 
-async def test_share_document_unauthorized_user(
+async def test_share_project_unauthorized_user(
     client: TestClient,
-    document,
+    document: Document,
 ):
-    # Given
-    payload = ShareInput(shared_role=ShareRole.EDIT, shared_by_link=True)
-
     # When
-    result = client.post(f"documents/share/{document.id}", json=payload.dict())
+    result = client.get(f"documents/{document.id}")
 
     # Then
     assert result.status_code == status.HTTP_403_FORBIDDEN
 
 
-async def test_share_document_no_document(
+async def test_check_searching(
     client: TestClient,
     mock_get_current_user,
-):
-    # Given
-    payload = ShareInput(shared_role=ShareRole.EDIT, shared_by_link=True)
-
-    # When
-    result = client.post("documents/share/test-id", json=payload.dict())
-
-    # Then
-    assert result.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-
-
-async def test_check_searching(
-    client: TestClient, mock_get_current_user, active_user, document
+    active_user: User,
+    document: Document,
+    project: Project,
 ):
     # Given
     doc_1 = await Document.create(
         title="sample name",
         content=json.dumps(["test"]).encode(),
         user=active_user,
+        project=project,
     )
 
     # When
@@ -121,13 +106,18 @@ async def test_check_invalid_pagination(
 
 
 async def test_check_size_page(
-    client: TestClient, active_user, mock_get_current_user, document
+    client: TestClient,
+    active_user,
+    mock_get_current_user,
+    document: Document,
+    project: Project,
 ):
     # Given
     await Document.create(
         title="sample name",
         content=json.dumps(["test"]).encode(),
         user=active_user,
+        project=project,
     )
 
     # When
@@ -143,7 +133,7 @@ async def test_check_size_page(
 
 @pytest.mark.parametrize("page_number", [-1, 0])
 async def test_check_invalid_page(
-    client: TestClient, mock_get_current_user, page_number
+    client: TestClient, mock_get_current_user, page_number: int
 ):
     # When
     response = client.get(f"/documents/?page={page_number}")
@@ -153,10 +143,10 @@ async def test_check_invalid_page(
 
 
 async def test_check_create_document(
-    client: TestClient, mock_get_current_user, active_user: User
+    client: TestClient, mock_get_current_user, active_user: User, project: Project
 ):
     # When
-    response = client.post(url="/documents/")
+    response = client.post(url="/documents/", json={"project_id": str(project.id)})
     json_response = response.json()
 
     # Then
@@ -164,15 +154,12 @@ async def test_check_create_document(
     assert json_response["title"] == "Draft Document"
     assert json_response["content"] == '[""]'
     assert json_response["user_id"] == str(active_user.id)
+    assert json_response["project_id"] == str(project.id)
 
 
-async def test_get_document_details(
-    client: TestClient, document: Document, active_user: User, mocker
+async def test_get_document_details1(
+    client: TestClient, mock_get_current_user, document: Document, active_user: User
 ):
-    mock = mocker.AsyncMock(return_value=active_user)
-    mocked_get_current_user = mocker.patch(
-        "quokka_editor_back.routers.documents.get_current_user", mock
-    )
     # When
     response = client.get(
         url=f"/documents/{document.id}/", headers={"authorization": "Bearer Fake"}
@@ -184,7 +171,6 @@ async def test_get_document_details(
     assert json_response["title"] == "test_document"
     assert json_response["content"] == '["test"]'
     assert json_response["user_id"] == str(active_user.id)
-    mocked_get_current_user.assert_called_once()
 
 
 async def test_get_document_details_invalid_uuid(

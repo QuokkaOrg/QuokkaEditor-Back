@@ -26,6 +26,7 @@ from quokka_editor_back.models.operation import (
     PosSchema,
 )
 from quokka_editor_back.models.user import User
+from quokka_editor_back.schema.websocket import MessageTypeEnum
 
 LOGGER = logging.getLogger(__name__)
 
@@ -194,6 +195,7 @@ async def test_process_one_operation(
 
 async def test_publish_operation(document: Document, active_user: User, mocker):
     # Given
+    user_token = "user_token"
     redis_client_mock = mocker.patch("redis.asyncio", new_callable=AsyncMock)
     token = auth_handler.encode_token(active_user.username)
     new_op = OperationSchema(
@@ -212,7 +214,9 @@ async def test_publish_operation(document: Document, active_user: User, mocker):
         f"{document.id}_{token}",
         json.dumps(
             {
-                "data": json.dumps({**new_op.dict(), "user_token": token}),
+                "data": {**new_op.dict()},
+                "type": MessageTypeEnum.EXT_CHANGE,
+                "user_token": token,
                 "revision": new_op.revision,
             }
         ),
