@@ -6,11 +6,42 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from quokka_editor_back.models.document import Document
-from quokka_editor_back.models.project import Project
+from quokka_editor_back.models.project import Project, ShareRole
 from quokka_editor_back.models.user import User
 from quokka_editor_back.schema.document import (
     DocumentUpdatePayload,
 )
+
+
+async def test_share_document(
+    client: TestClient,
+    project: Project,
+    document: Document,
+    mock_get_current_user,
+):
+    # Given
+    project.shared_by_link = True
+    project.shared_role = ShareRole.EDIT
+    await project.save()
+
+    # When
+    result = client.get(f"documents/{document.id}")
+
+    # Then
+    json_response = result.json()
+    assert result.status_code == status.HTTP_200_OK
+    assert json_response.get("id") == str(document.id)
+
+
+async def test_share_project_unauthorized_user(
+    client: TestClient,
+    document: Document,
+):
+    # When
+    result = client.get(f"documents/{document.id}")
+
+    # Then
+    assert result.status_code == status.HTTP_403_FORBIDDEN
 
 
 async def test_check_searching(
