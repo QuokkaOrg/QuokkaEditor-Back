@@ -47,7 +47,7 @@ async def authenticate_websocket(
 ) -> tuple[User | None, ShareRole | None]:
     user = None
     try:
-        document = await Document.get(id=document_id)
+        document = await Document.get(id=document_id).select_related("project")
     except DoesNotExist as err:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION) from err
     if token:

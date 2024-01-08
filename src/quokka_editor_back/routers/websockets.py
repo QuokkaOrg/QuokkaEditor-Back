@@ -70,7 +70,7 @@ async def process_websocket_message(
     read_only: bool,
 ):
     json_data = json.loads(data)
-    new_data = json.dumps({"data": json_data, "user_token": user_token})
+    new_data = {"data": json_data, "user_token": user_token}
 
     if json_data["type"] == "cursor":
         await manager.broadcast(
@@ -86,7 +86,7 @@ async def process_websocket_message(
 
     if read_only:
         return
-    await redis_client.rpush(f"document_operations_{document_id}", new_data)
+    await redis_client.rpush(f"document_operations_{document_id}", json.dumps(new_data))
     if await redis_client.set(f"document_processing_{document_id}", 1, nx=True):
         transform_document.send(str(document_id))
 
@@ -123,12 +123,10 @@ async def websocket_endpoint(
     finally:
         await manager.disconnect(websocket, document_id)
         await manager.broadcast(
-            message=json.dumps(
-                {
-                    "message": f"User {user_token} Disconnected from the file.",
-                    "user_token": user_token,
-                }
-            ),
+            message={
+                "message": f"User {user_token} Disconnected from the file.",
+                "user_token": user_token,
+            },
             websocket=websocket,
             document_id=document_id,
             user_token=user_token,

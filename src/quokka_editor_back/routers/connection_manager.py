@@ -64,7 +64,7 @@ class ConnectionManager:
 
     async def broadcast(
         self,
-        message: str,
+        message: dict,
         websocket: WebSocket,
         document_id: UUID,
         user_token: str,
@@ -76,4 +76,4 @@ class ConnectionManager:
                 if send_to_owner:
                     await self.ack_message(websocket, revision, user_token)
             else:
-                await websocket_conn.send_text(message)
+                await websocket_conn.send_json(message)

@@ -121,7 +121,7 @@ async def read_project(
         )
     return {
         "project": project,
-        "documents": await Document.filter(project__id=project_id, user=current_user),
+        "documents": await Document.filter(project__id=project_id),
     }
 
 
