@@ -39,7 +39,7 @@ class ConnectionManager:
 
         for websocket, data in self.active_connections[document_id].items():
             if data["user_token"] != user_token:
-                await websocket.send_json(data)
+                await websocket.send_json(websocket_data)
 
     async def connect(
         self, websocket: WebSocket, document_id: UUID, username: str, user_token: str
