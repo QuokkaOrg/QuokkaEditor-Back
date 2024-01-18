@@ -30,7 +30,7 @@ async def async_document_task(document_id: str, *args, **kwargs) -> None:
     redis_client: AsyncRedis = await get_redis()
     try:
         document = await get_document(document_id=uuid.UUID(document_id))
-        await process_operations(redis_client, document_id, document)
+        await process_operations(redis_client, document)
     except Exception as err:
         logger.warning("THERE IS AN ERROR %s", err)
     finally:
@@ -52,13 +52,13 @@ async def process_one_operation(
 
 
 async def process_operations(redis_client: AsyncRedis, document: Document) -> None:
-    async for op_data in fetch_operations_from_redis(redis_client, document.id):
+    async for op_data in fetch_operations_from_redis(redis_client, str(document.id)):
         loaded_op_data = json.loads(op_data)
         user_token = loaded_op_data["user_token"]
         if new_op := await process_one_operation(loaded_op_data, document):
             await publish_operation(
                 redis_client,
-                document.id,
+                str(document.id),
                 user_token,
                 new_op,
             )

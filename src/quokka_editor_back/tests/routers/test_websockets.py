@@ -81,7 +81,7 @@ async def test_process_websocket_message_cursor(
     token = auth_handler.encode_token(active_user.username)
     data = '{"type": "cursor"}'
     json_data = json.loads(data)
-    new_data = json.dumps({"data": json_data, "user_token": token})
+    new_data = {'data': json_data, 'user_token': token}
     mock_manager = AsyncMock()
     mocked_manager = mocker.patch(
         "quokka_editor_back.routers.websockets.manager", mock_manager

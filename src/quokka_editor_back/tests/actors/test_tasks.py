@@ -73,7 +73,7 @@ async def test_async_document_task(
 
     # Then
     mocked_get_redis.assert_called_once()
-    mocked_process_operations.assert_called_once_with(ANY, str(document.id), document)
+    mocked_process_operations.assert_called_once_with(ANY, document)
     mocked_cleanup.assert_called_once_with(ANY, str(document.id))
 
 
@@ -153,7 +153,7 @@ async def test_process_operations(
     mock_process_one_operation.assert_called_once_with(json.loads(value_1), document)
     mock_publish_operation.assert_called_once_with(
         redis_client_mock,
-        document.id,
+        str(document.id),
         user_token,
         ANY,
     )
